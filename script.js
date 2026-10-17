@@ -1,7 +1,6 @@
-// your code goes here
 "use strict";
 
-// ===================== ОПРЕДЕЛЕНИЕ МОБИЛЬНОГО =====================
+// ===================== МОБИЛЬНЫЙ =====================
 const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
                  || (navigator.maxTouchPoints > 1 && /Mobi|Tablet/i.test(navigator.userAgent));
 
@@ -14,23 +13,19 @@ const PLAYER_RADIUS = 12;
 const BASE_SPEED = 150;
 const MAX_PARTICLES = 150;
 
-const TILE_GRASS = 0, TILE_STONE = 1, TILE_TREE = 2, TILE_WATER = 3, TILE_CAVE = 4, TILE_SNOW = 5, TILE_SAND = 6;
+const TILE_GRASS = 0, TILE_STONE = 1, TILE_TREE = 2, TILE_WATER = 3, TILE_SNOW = 4, TILE_SAND = 5;
 
 const BIOMES = {
   forest:  { id:'forest',  name:'🌲 Лес',      grass:'#7ec850', grassDetail:'#6ab040', ice:false },
   desert:  { id:'desert',  name:'🏜️ Пустыня',  grass:'#e8d28a', grassDetail:'#c9b06e', ice:false },
-  snow:    { id:'snow',    name:'❄️ Снега',    grass:'#e8f0f5', grassDetail:'#c0d4e0', ice:true },
-  normal:  { id:'normal',  name:'🌳 Поляна',   grass:'#7ec850', grassDetail:'#6ab040', ice:false }
+  snow:    { id:'snow',    name:'❄️ Снега',    grass:'#e8f0f5', grassDetail:'#c0d4e0', ice:true }
 };
 
 const RESOURCE_TYPES = {
   stone:   { name:'Камень',  color:'#9e9e9e', money:10,  time:2.0 },
   wood:    { name:'Дерево',  color:'#6b8e23', money:15,  time:2.0 },
   gold:    { name:'Золото',  color:'#ffd700', money:30,  time:3.0 },
-  diamond: { name:'Алмаз',   color:'#b9f2ff', money:60,  time:4.0 },
-  iron:    { name:'Железо',  color:'#8d8d8d', money:45,  time:3.5 },
-  steel:   { name:'Сталь',   color:'#c0c0c0', money:80,  time:4.5 },
-  crystal: { name:'Кристалл',color:'#e040fb', money:120, time:5.0 }
+  diamond: { name:'Алмаз',   color:'#b9f2ff', money:60,  time:4.0 }
 };
 
 const ANIMAL_TYPES = {
@@ -38,49 +33,60 @@ const ANIMAL_TYPES = {
 };
 
 const SKINS = [
-  { id:'default', name:'Стандарт', cost:0,   level:1, colorBody:'#ff9800', colorHead:'#ff9800', hat:null },
-  { id:'blue',    name:'Синий',    cost:100, level:1, colorBody:'#2196f3', colorHead:'#2196f3', hat:null },
-  { id:'red',     name:'Красный',  cost:150, level:2, colorBody:'#f44336', colorHead:'#f44336', hat:null },
-  { id:'cowboy',  name:'Ковбой',   cost:200, level:3, colorBody:'#8d6e63', colorHead:'#ffcc80', hat:'cowboy' },
-  { id:'knight',  name:'Рыцарь',   cost:300, level:4, colorBody:'#607d8b', colorHead:'#cfd8dc', hat:'helmet' },
-  { id:'ninja',   name:'Ниндзя',   cost:500, level:6, colorBody:'#212121', colorHead:'#424242', hat:'ninja' },
-  { id:'wizard',  name:'Маг',      cost:800, level:8, colorBody:'#673ab7', colorHead:'#9c27b0', hat:'wizard' }
+  { id:'default', name:'Стандарт', cost:0,   level:1, colorBody:'#ff9800', colorHead:'#ff9800' },
+  { id:'blue',    name:'Синий',    cost:100, level:1, colorBody:'#2196f3', colorHead:'#2196f3' },
+  { id:'red',     name:'Красный',  cost:150, level:2, colorBody:'#f44336', colorHead:'#f44336' },
+  { id:'green',   name:'Зелёный',  cost:200, level:3, colorBody:'#4caf50', colorHead:'#4caf50' },
+  { id:'purple',  name:'Фиолет',   cost:300, level:4, colorBody:'#9c27b0', colorHead:'#9c27b0' }
+];
+
+const ACCESSORIES = [
+  { id:'hat',    name:'🎩 Шляпа',    cost:150, level:2 },
+  { id:'crown',  name:'👑 Корона',   cost:400, level:5 },
+  { id:'glasses',name:'🕶️ Очки',     cost:200, level:3 }
 ];
 
 const WEAPONS = [
-  { id:'fists',  name:'Кулаки',       cost:0,    level:1, damage:8,  range:35,  cooldown:0.45, icon:'✊', color:'#ff9800' },
-  { id:'club',   name:'Дубина',       cost:50,   level:1, damage:15, range:40,  cooldown:0.55, icon:'🏏', color:'#8d6e63' },
-  { id:'sword',  name:'Меч',          cost:200,  level:2, damage:25, range:50,  cooldown:0.40, icon:'⚔️', color:'#cfd8dc' },
-  { id:'spear',  name:'Копьё',        cost:400,  level:4, damage:35, range:70,  cooldown:0.50, icon:'🔱', color:'#a1887f' },
-  { id:'axe',    name:'Боевой топор', cost:700,  level:6, damage:50, range:50,  cooldown:0.70, icon:'🪓', color:'#795548' },
-  { id:'bow',    name:'Лук',          cost:1200, level:8, damage:65, range:220, cooldown:0.85, icon:'🏹', color:'#5d4037', ranged:true }
+  { id:'fists',  name:'Кулаки',  cost:0,    level:1, damage:8,  range:35,  cooldown:0.45, icon:'✊', color:'#ff9800' },
+  { id:'club',   name:'Дубина',  cost:50,   level:1, damage:15, range:40,  cooldown:0.55, icon:'🏏', color:'#8d6e63' },
+  { id:'sword',  name:'Меч',     cost:200,  level:2, damage:25, range:50,  cooldown:0.40, icon:'⚔️', color:'#cfd8dc' },
+  { id:'spear',  name:'Копьё',   cost:400,  level:4, damage:35, range:70,  cooldown:0.50, icon:'🔱', color:'#a1887f' },
+  { id:'axe',    name:'Топор',   cost:700,  level:6, damage:50, range:50,  cooldown:0.70, icon:'🪓', color:'#795548' },
+  { id:'bow',    name:'Лук',     cost:1200, level:8, damage:65, range:220, cooldown:0.85, icon:'🏹', color:'#5d4037', ranged:true }
 ];
 
 const CRAFT_RECIPES = [
-  { name:'Зелье скорости',    desc:'+50% скорости на 30 сек', cost:{stone:10,wood:5},   effect:'speed_boost' },
-  { name:'Каменная броня',    desc:'-20% времени добычи',      cost:{stone:20,wood:10},  effect:'mining_boost' },
-  { name:'Золотая кирка',     desc:'x2 золота',                cost:{gold:5,diamond:2},  effect:'gold_pickaxe' },
-  { name:'Железный щит',      desc:'-30% урона от волков',     cost:{iron:5,wood:10},    effect:'iron_shield' },
-  { name:'Стальной меч',      desc:'+15 урона навсегда',       cost:{steel:3,iron:5},    effect:'steel_sword' },
-  { name:'Кристальный амулет',desc:'+30 HP максимум',          cost:{crystal:2,gold:10}, effect:'crystal_amulet' }
+  { name:'Зелье скорости', desc:'+50% скорости на 30 сек', cost:{stone:10,wood:5},   effect:'speed_boost' },
+  { name:'Каменная броня', desc:'-20% времени добычи',      cost:{stone:20,wood:10},  effect:'mining_boost' },
+  { name:'Золотая кирка',  desc:'x2 золота',                cost:{gold:5,diamond:2},  effect:'gold_pickaxe' }
 ];
 
-const WORKBENCH_RECIPES = [
-  { name:'Скоростной бур', desc:'+50% скорости добычи',     cost:{iron:5, steel:2},       effect:'fast_mining', icon:'⚙️' },
-  { name:'Золотой компас', desc:'Клад на каждом уровне',    cost:{gold:15, crystal:1},    effect:'compass',     icon:'🧭' },
-  { name:'Амулет удачи',   desc:'+25% к цене продажи',      cost:{diamond:10, crystal:3}, effect:'lucky_charm', icon:'🍀' },
-  { name:'Фонарик',        desc:'Открывает пещеры',         cost:{iron:3, gold:5},        effect:'flashlight',  icon:'🔦' }
+const PETS = [
+  { id:'dog',    name:'🐕 Собака',  cost:300,  level:2, desc:'Собирает ресурсы рядом' },
+  { id:'parrot', name:'🦜 Попугай', cost:500,  level:4, desc:'Приносит +5 монет раз в 30с' }
 ];
 
-const BUILDINGS = [
-  { id:'house',    name:'🏠 Дом',     cost:{wood:30, stone:20},         desc:'+10% к деньгам',         level:1, effect:'house_bonus' },
-  { id:'workbench',name:'🔨 Верстак', cost:{wood:50, stone:30, iron:5}, desc:'Открывает новые рецепты',level:3, effect:'workbench' },
-  { id:'furnace',  name:'🔥 Печь',    cost:{stone:40, iron:3},          desc:'Плавит камень→железо',   level:4, effect:'furnace' }
+const ACHIEVEMENTS = [
+  { id:'first_mine',  name:'Первый камень',       desc:'Добудь 1 ресурс',      reward:20,  check: () => stats.mined >= 1 },
+  { id:'miner_10',    name:'Начинающий шахтёр',   desc:'Добудь 10 ресурсов',   reward:50,  check: () => stats.mined >= 10 },
+  { id:'miner_100',   name:'Опытный шахтёр',      desc:'Добудь 100 ресурсов',  reward:300, check: () => stats.mined >= 100 },
+  { id:'hunter_5',    name:'Охотник',             desc:'Поймай 5 куриц',       reward:50,  check: () => stats.chickens >= 5 },
+  { id:'wolf_5',      name:'Гроза волков',        desc:'Убей 5 волков',        reward:100, check: () => stats.wolves >= 5 },
+  { id:'wolf_20',     name:'Волчий кошмар',       desc:'Убей 20 волков',       reward:400, check: () => stats.wolves >= 20 },
+  { id:'boss_1',      name:'Первый босс',         desc:'Убей первого босса',   reward:500, check: () => stats.bosses >= 1 },
+  { id:'level_5',     name:'Опытный',             desc:'Дойди до 5 уровня',    reward:200, check: () => currentLevel >= 5 },
+  { id:'level_10',    name:'Мастер',              desc:'Дойди до 10 уровня',   reward:800, check: () => currentLevel >= 10 },
+  { id:'rich_1000',   name:'Богач',               desc:'Накопи 1000 монет',    reward:100, check: () => balance >= 1000 },
+  { id:'deaths_3',    name:'Не сдаётся',          desc:'Умри 3 раза',          reward:50,  check: () => stats.deaths >= 3 },
+  { id:'chef',        name:'Шеф-повар',           desc:'Съешь 10 мяса',        reward:100, check: () => stats.meatEaten >= 10 },
+  { id:'pvp_1',       name:'Дуэлянт',             desc:'Выиграй первый PvP',   reward:100, check: () => pvp.wins >= 1 },
+  { id:'pvp_5',       name:'Гладиатор',           desc:'Выиграй 5 PvP',        reward:300, check: () => pvp.wins >= 5 },
+  { id:'mp_1',        name:'В сети',              desc:'Сыграй с другом',      reward:200, check: () => mp.stats.games >= 1 },
+  { id:'mp_5',        name:'Тиммейт',             desc:'Сыграй 5 игр с другом',reward:500, check: () => mp.stats.games >= 5 }
 ];
 
 const PRICE_SPEED = 50, PRICE_MINING = 80, PRICE_BONUS = 100;
 const PRICE_TOOL_STONE = 80, PRICE_TOOL_GOLD = 150, PRICE_TOOL_DIAMOND = 250;
-const PRICE_TOOL_IRON = 400, PRICE_TOOL_STEEL = 700, PRICE_TOOL_CRYSTAL = 1200;
 const MAX_MINING = 3;
 
 const LEVEL_TARGETS = [200, 1000, 2000, 3500, 5500, 8000, 11000, 15000, 20000, 27000];
@@ -99,10 +105,31 @@ const MEAT_HEAL = 20;
 const DEATH_RESOURCE_LOSS = 0.5;
 const DEATH_MONEY_LOSS = 0.25;
 
+const MAX_HUNGER = 100;
+const HUNGER_DRAIN = 0.5;
+
 const COMBO_MAX = 5;
 const COMBO_TIMEOUT = 6.0;
 const FAIR_DURATION = 60;
 const FAIR_COOLDOWN = 300;
+
+// ===================== PVP =====================
+const PVP_OPPONENTS = [
+  { id:'novice',  name:'🟢 Новичок',   level:1, hp:60,  damage:8,  speed:80,  icon:'👤', reward:50,  ratingWin:15, ratingLoss:5,  difficulty:'Лёгкий' },
+  { id:'warrior', name:'🟡 Воин',      level:2, hp:100, damage:15, speed:100, icon:'⚔️', reward:120, ratingWin:25, ratingLoss:10, difficulty:'Средний' },
+  { id:'knight',  name:'🟠 Рыцарь',    level:4, hp:150, damage:25, speed:120, icon:'🛡️', reward:250, ratingWin:40, ratingLoss:15, difficulty:'Сложный' },
+  { id:'master',  name:'🔴 Мастер',    level:6, hp:200, damage:35, speed:140, icon:'💀', reward:500, ratingWin:60, ratingLoss:20, difficulty:'Очень сложный' },
+  { id:'legend',  name:'💀 Легенда',   level:8, hp:300, damage:50, speed:160, icon:'👹', reward:1000,ratingWin:100,ratingLoss:30, difficulty:'Смертельный' }
+];
+
+const RANKS = [
+  { min:0,    name:'🥉 Новичок',     color:'#cd7f32' },
+  { min:500,  name:'🥈 Бронза',      color:'#a9a9a9' },
+  { min:1000, name:'🥇 Серебро',     color:'#e0e0e0' },
+  { min:1500, name:'👑 Золото',      color:'#ffd700' },
+  { min:2000, name:'💎 Платина',     color:'#b9f2ff' },
+  { min:2500, name:'🌟 Легенда',     color:'#e040fb' }
+];
 
 // ===================== СОСТОЯНИЕ =====================
 const canvas = document.getElementById('gameCanvas');
@@ -110,7 +137,7 @@ const ctx = canvas.getContext('2d', { alpha: false });
 canvas.width = CANVAS_WIDTH;
 canvas.height = CANVAS_HEIGHT;
 
-const STATE_MENU='menu', STATE_PLAYING='playing', STATE_PAUSED='paused', STATE_SHOP='shop', STATE_HOWTO='howto', STATE_INVENTORY='inventory', STATE_BUILD='build';
+const STATE_MENU='menu', STATE_PLAYING='playing', STATE_PAUSED='paused', STATE_SHOP='shop', STATE_HOWTO='howto', STATE_INVENTORY='inventory', STATE_ACHIEVEMENTS='achievements', STATE_PVP_MENU='pvp_menu', STATE_PVP_ARENA='pvp_arena', STATE_PVP_RESULT='pvp_result', STATE_MP_MENU='mp_menu', STATE_MP_LOBBY='mp_lobby', STATE_MP_GAME='mp_game';
 let gameState = STATE_MENU;
 
 const keys = {};
@@ -119,45 +146,65 @@ let player = { x:CANVAS_WIDTH/2, y:CANVAS_HEIGHT/2, radius:PLAYER_RADIUS, walkCy
 
 let playerHealth = MAX_HEALTH;
 let playerMaxHealth = MAX_HEALTH;
+let playerHunger = MAX_HUNGER;
 let playerHurtTimer = 0, playerInvulnTimer = 0, deathBanner = 0;
 
-let inventory = { stone:0, wood:0, gold:0, diamond:0, iron:0, steel:0, crystal:0, meat:0 };
+let inventory = { stone:0, wood:0, gold:0, diamond:0, meat:0 };
 let map = [], resources = [], animals = [], wolves = [];
 let activeMining = null, flyingTexts = [], particles = [], projectiles = [], slashEffects = [];
 let balance = 0, wolfSpawnTimer = 0;
 
 let upgrades = {
   speed:0, mining:0, bonus:false,
-  tools:{ stone:false, gold:false, diamond:false, iron:false, steel:false, crystal:false }
+  tools:{ stone:false, gold:false, diamond:false }
 };
 
 let equippedSkin = 'default', ownedSkins = ['default'];
+let equippedAccessory = null, ownedAccessories = [];
 let equippedWeapon = 'fists', ownedWeapons = ['fists'];
 
-let built = { house:false, workbench:false, furnace:false };
+let ownedPets = [], activePet = null;
+let petTimer = 0;
+
+let stats = { mined: 0, chickens: 0, wolves: 0, bosses: 0, deaths: 0, meatEaten: 0 };
+let unlockedAchievements = [];
+
+let dailyQuest = null;
+
+let pvp = { wins: 0, losses: 0, rating: 0, winStreak: 0, bestStreak: 0, lastOpponent: null, battles: [] };
+let pvpPlayer = null, pvpOpponent = null, pvpResult = null;
+
+// Мультиплеер
+let mp = {
+  peer: null,
+  roomId: null,
+  isHost: false,
+  nickname: '',
+  remotePlayer: null,
+  connected: false,
+  chatMessages: [],
+  chatInput: '',
+  stats: { games: 0 }
+};
 
 let gameWasStarted = false, currentLevel = 1, targetMoney = getTargetForLevel(1);
 let speedBoostTimer = 0, miningBoostActive = false, goldPickaxeActive = false;
-let ironShieldActive = false, steelSwordActive = false, crystalAmuletActive = false;
-let fastMiningActive = false, compassActive = false, luckyCharmActive = false;
-let flashlightActive = false;
 
 let levelTransition = 0, levelTransitionPhase = 'none';
 let comboCount = 0, comboTimer = 0;
 let fairActive = false, fairTimer = 0, fairCooldown = 0;
-let treasure = null;
-let treasureParticles = 0;
+let treasure = null, treasureParticles = 0;
 
-let currentBiome = BIOMES.normal;
-let caves = [];
+let currentBiome = BIOMES.forest;
 let bosses = [];
 let bossActive = false;
 
 let lastAttackTime = 0;
-let audioCtx = null, soundEnabled = true;
+let audioCtx = null, soundEnabled = true, musicEnabled = true;
+let musicInterval = null;
 let animTime = 0;
 
-// ===================== МОБИЛЬНОЕ УПРАВЛЕНИЕ =====================
+// ===================== МОБИЛЬНОЕ =====================
 let joystickActive = false, joystickDX = 0, joystickDY = 0;
 let joystickStartX = 0, joystickStartY = 0;
 const JOYSTICK_KNOB_MAX = 40;
@@ -242,11 +289,11 @@ if(isMobile){
   joystickEl.addEventListener('touchend', onJoystickEnd, {passive:false});
   joystickEl.addEventListener('touchcancel', onJoystickEnd, {passive:false});
   btnAction.addEventListener('touchstart', e => { e.preventDefault(); if(gameState===STATE_PLAYING) triggerAction(); }, {passive:false});
-  btnAttack.addEventListener('touchstart', e => { e.preventDefault(); if(gameState===STATE_PLAYING) playerAttack(); }, {passive:false});
+  btnAttack.addEventListener('touchstart', e => { e.preventDefault(); if(gameState===STATE_PLAYING) playerAttack(); else if(gameState===STATE_PVP_ARENA) pvpPlayerAttack(); }, {passive:false});
   btnEat.addEventListener('touchstart', e => { e.preventDefault(); if(gameState===STATE_PLAYING) eatMeat(); }, {passive:false});
   btnShop.addEventListener('touchstart', e => { e.preventDefault(); if(gameState===STATE_PLAYING||gameState===STATE_PAUSED) openShop(); }, {passive:false});
   btnInv.addEventListener('touchstart', e => { e.preventDefault(); if(gameState===STATE_PLAYING) openInventory(); }, {passive:false});
-  btnMenu.addEventListener('touchstart', e => { e.preventDefault(); if(gameState===STATE_PLAYING) pauseGame(); else if(gameState===STATE_PAUSED) goToMainMenu(); }, {passive:false});
+  btnMenu.addEventListener('touchstart', e => { e.preventDefault(); if(gameState===STATE_PLAYING) pauseGame(); else if(gameState===STATE_PAUSED) goToMainMenu(); else if(gameState===STATE_PVP_ARENA) exitPvpArena(); else if(gameState===STATE_MP_GAME) leaveMultiplayer(); }, {passive:false});
 }
 
 // ===================== УТИЛИТЫ =====================
@@ -259,7 +306,6 @@ function getCanvasCoords(e){
 function isTileWalkable(tx,ty){
   if(tx<0||tx>=MAP_WIDTH||ty<0||ty>=MAP_HEIGHT) return false;
   const t = map[ty][tx];
-  if(t === TILE_CAVE) return flashlightActive;
   if(t === TILE_GRASS || t === TILE_SNOW || t === TILE_SAND) return true;
   return false;
 }
@@ -281,22 +327,13 @@ function craft(r){
   if(r.effect==='speed_boost') speedBoostTimer=30;
   else if(r.effect==='mining_boost') miningBoostActive=true;
   else if(r.effect==='gold_pickaxe') goldPickaxeActive=true;
-  else if(r.effect==='iron_shield') ironShieldActive=true;
-  else if(r.effect==='steel_sword') steelSwordActive=true;
-  else if(r.effect==='crystal_amulet'){ playerMaxHealth += 30; playerHealth = playerMaxHealth; crystalAmuletActive = true; }
-  else if(r.effect==='fast_mining') fastMiningActive = true;
-  else if(r.effect==='compass') compassActive = true;
-  else if(r.effect==='lucky_charm') luckyCharmActive = true;
-  else if(r.effect==='flashlight') flashlightActive = true;
   saveGame();
 }
 function getCurrentWeapon(){ return WEAPONS.find(w=>w.id===equippedWeapon) || WEAPONS[0]; }
 function getSellPrice(key){
-  const base = { stone:10, wood:15, gold:30, diamond:60, iron:45, steel:80, crystal:120, meat:5 }[key] || 0;
+  const base = { stone:10, wood:15, gold:30, diamond:60, meat:5 }[key] || 0;
   let price = base;
   if(upgrades.bonus) price *= 1.5;
-  if(built.house) price *= 1.1;
-  if(luckyCharmActive) price *= 1.25;
   if(fairActive) price *= 2;
   return Math.floor(price);
 }
@@ -306,6 +343,50 @@ function getBiomeForLevel(level){
   if(idx === 0) return BIOMES.forest;
   if(idx === 1) return BIOMES.desert;
   return BIOMES.snow;
+}
+
+// ===================== ДОСТИЖЕНИЯ =====================
+function checkAchievements(){
+  for(let a of ACHIEVEMENTS){
+    if(unlockedAchievements.includes(a.id)) continue;
+    if(a.check()){
+      unlockedAchievements.push(a.id);
+      balance += a.reward;
+      flyingTexts.push({text:`🏆 ${a.name}! +${a.reward}💰`,x:player.x,y:player.y-60,life:3.0,color:'#ffd700'});
+      playLevelUpSound();
+      saveGame();
+    }
+  }
+}
+
+// ===================== ЕЖЕДНЕВНОЕ =====================
+function generateDailyQuest(){
+  const today = new Date().toDateString();
+  const saved = localStorage.getItem('minersQuest_daily');
+  if(saved){
+    try { const d = JSON.parse(saved); if(d.date === today){ dailyQuest = d; return; } } catch(e){}
+  }
+  const types = [
+    { type:'mine', name:'Добудь 15 ресурсов', target:15, reward:100 },
+    { type:'hunt', name:'Поймай 5 куриц', target:5, reward:80 },
+    { type:'wolf', name:'Убей 3 волков', target:3, reward:150 },
+    { type:'sell', name:'Продай на 200 монет', target:200, reward:120 }
+  ];
+  const chosen = types[Math.floor(Math.random()*types.length)];
+  dailyQuest = { date: today, type: chosen.type, name: chosen.name, target: chosen.target, progress: 0, reward: chosen.reward, done: false };
+  localStorage.setItem('minersQuest_daily', JSON.stringify(dailyQuest));
+}
+function updateDailyQuest(type, amount){
+  if(!dailyQuest || dailyQuest.done) return;
+  if(dailyQuest.type !== type) return;
+  dailyQuest.progress = Math.min(dailyQuest.target, dailyQuest.progress + amount);
+  if(dailyQuest.progress >= dailyQuest.target && !dailyQuest.done){
+    dailyQuest.done = true;
+    balance += dailyQuest.reward;
+    flyingTexts.push({text:`📅 Задание! +${dailyQuest.reward}💰`,x:player.x,y:player.y-80,life:3.0,color:'#4caf50'});
+    playLevelUpSound();
+  }
+  localStorage.setItem('minersQuest_daily', JSON.stringify(dailyQuest));
 }
 
 // ===================== ГЕНЕРАЦИЯ =====================
@@ -324,22 +405,6 @@ function generateMap(level){
     map[ty][tx] = [TILE_STONE,TILE_TREE,TILE_WATER][Math.floor(Math.random()*3)];
     p++;
   }
-  caves = [];
-  if(flashlightActive && level >= 2){
-    const caveCount = 1 + Math.floor(level / 4);
-    for(let i=0;i<caveCount;i++){
-      let tx,ty,a=0;
-      do{
-        tx = Math.floor(Math.random()*MAP_WIDTH);
-        ty = Math.floor(Math.random()*MAP_HEIGHT);
-        a++;
-      } while((Math.abs(tx-cTX)<=3 && Math.abs(ty-cTY)<=3) || map[ty][tx] !== groundTile || a < 30);
-      for(let dy=0;dy<2;dy++)for(let dx=0;dx<2;dx++){
-        if(tx+dx<MAP_WIDTH && ty+dy<MAP_HEIGHT) map[ty+dy][tx+dx] = TILE_CAVE;
-      }
-      caves.push({ tx, ty });
-    }
-  }
 }
 function placeResourcesOfType(type,count,cTX,cTY){
   let a=0,pl=0;
@@ -347,9 +412,9 @@ function placeResourcesOfType(type,count,cTX,cTY){
     const tx=Math.floor(Math.random()*MAP_WIDTH),ty=Math.floor(Math.random()*MAP_HEIGHT);
     if(Math.abs(tx-cTX)<=1&&Math.abs(ty-cTY)<=1){a++;continue;}
     const t = map[ty][tx];
-    if(t !== TILE_GRASS && t !== TILE_SNOW && t !== TILE_SAND && t !== TILE_CAVE){a++;continue;}
+    if(t !== TILE_GRASS && t !== TILE_SNOW && t !== TILE_SAND){a++;continue;}
     if(resources.some(r=>r.tx===tx&&r.ty===ty)){a++;continue;}
-    resources.push({ type,tx,ty,state:'idle',respawnTimer:0,particleTimer:0, inCave: t===TILE_CAVE });
+    resources.push({ type,tx,ty,state:'idle',respawnTimer:0,particleTimer:0 });
     pl++;a++;
   }
 }
@@ -370,31 +435,6 @@ function generateResources(level){
     if(level>=5) cnt++;
     cnt=Math.min(cnt,4);
     placeResourcesOfType('diamond',cnt,cTX,cTY);
-  }
-  if(level>=4 && Math.random()<0.50){
-    let cnt=2+Math.floor(Math.random()*3);
-    placeResourcesOfType('iron',cnt,cTX,cTY);
-  }
-  if(level>=7 && Math.random()<0.40){
-    let cnt=1+Math.floor(Math.random()*3);
-    placeResourcesOfType('steel',cnt,cTX,cTY);
-  }
-  if(level>=10 && Math.random()<0.30){
-    let cnt=1+Math.floor(Math.random()*2);
-    placeResourcesOfType('crystal',cnt,cTX,cTY);
-  }
-  if(flashlightActive){
-    for(let cave of caves){
-      const bonus = ['gold','diamond','iron','crystal'][Math.floor(Math.random()*4)];
-      for(let dy=0;dy<2;dy++)for(let dx=0;dx<2;dx++){
-        if(Math.random() < 0.4){
-          const tx = cave.tx + dx, ty = cave.ty + dy;
-          if(!resources.some(r=>r.tx===tx&&r.ty===ty)){
-            resources.push({ type:bonus, tx, ty, state:'idle', respawnTimer:0, particleTimer:0, inCave:true });
-          }
-        }
-      }
-    }
   }
 }
 function generateAnimals(level){
@@ -435,22 +475,14 @@ function generateBoss(level){
     const cx=tx*TILE_SIZE+TILE_SIZE/2, cy=ty*TILE_SIZE+TILE_SIZE/2;
     if(Math.hypot(player.x-cx, player.y-cy) < TILE_SIZE*6) continue;
     const hp = 200 + level * 50;
-    bosses.push({
-      type:'boss',
-      x: cx, y: cy,
-      tx, ty,
-      health: hp, maxHealth: hp,
-      state:'idle', attackCooldown: 0,
-      walkCycle: 0,
-      phase: 1
-    });
+    bosses.push({ type:'boss', x: cx, y: cy, tx, ty, health: hp, maxHealth: hp, state:'idle', attackCooldown: 0, walkCycle: 0, phase: 1 });
     bossActive = true;
     break;
   }
 }
 function generateTreasure(level){
   treasure = null;
-  if(level % 3 !== 0 && !compassActive) return;
+  if(level % 3 !== 0) return;
   for(let a=0;a<100;a++){
     const tx = Math.floor(Math.random()*MAP_WIDTH);
     const ty = Math.floor(Math.random()*MAP_HEIGHT);
@@ -506,16 +538,12 @@ function startMining(res){
   if(res.type==='stone' && !upgrades.tools.stone){needTool=true;toolName='Кирка';}
   else if(res.type==='gold' && !upgrades.tools.gold){needTool=true;toolName='Золотая кирка';}
   else if(res.type==='diamond' && !upgrades.tools.diamond){needTool=true;toolName='Алмазный бур';}
-  else if(res.type==='iron' && !upgrades.tools.iron){needTool=true;toolName='Железная кирка';}
-  else if(res.type==='steel' && !upgrades.tools.steel){needTool=true;toolName='Стальная кирка';}
-  else if(res.type==='crystal' && !upgrades.tools.crystal){needTool=true;toolName='Кристальный бур';}
   if(needTool){
     flyingTexts.push({text:`🔒 Нужна: ${toolName}!`,x:player.x,y:player.y-40,life:2.0,color:'#ff5252'});
     return;
   }
   let dur = cfg.time;
   if(miningBoostActive) dur *= 0.8;
-  if(fastMiningActive) dur *= 0.5;
   dur = Math.max(0.5, dur - upgrades.mining*0.5);
   res.state='mining';
   activeMining = { resource:res, startTime:performance.now()/1000, duration:dur };
@@ -531,7 +559,6 @@ function finishMining(){
     if(upgrades.tools.stone && res.type==='stone') amount*=2;
     if(upgrades.tools.gold && res.type==='gold') amount*=2;
     if(goldPickaxeActive && res.type==='gold') amount*=2;
-
     comboCount++;
     comboTimer = COMBO_TIMEOUT;
     if(comboCount >= COMBO_MAX){
@@ -540,20 +567,25 @@ function finishMining(){
       flyingTexts.push({text:`🔥 КОМБО x2!`,x:player.x,y:player.y-60,life:2.0,color:'#ff5722'});
       playLevelUpSound();
     }
-
     addResource(res.type, amount);
+    stats.mined += amount;
+    updateDailyQuest('mine', amount);
     flyingTexts.push({text:`+${amount} ${cfg.name}`,x:res.tx*TILE_SIZE+TILE_SIZE/2,y:res.ty*TILE_SIZE+TILE_SIZE/2,life:1.0,color:cfg.color});
     spawnParticles(res.tx*TILE_SIZE+TILE_SIZE/2, res.ty*TILE_SIZE+TILE_SIZE/2, cfg.color, 5);
     res.state='respawning';
     res.respawnTimer=15+currentLevel*2;
     playCollectSound(res.type);
+    checkAchievements();
   } else if(activeMining.animal){
     const a=activeMining.animal, cfg=ANIMAL_TYPES[a.type];
     addResource(cfg.drop, cfg.dropAmount);
+    stats.chickens++;
+    updateDailyQuest('hunt', 1);
     flyingTexts.push({text:`+${cfg.dropAmount} 🍗`,x:a.tx*TILE_SIZE+TILE_SIZE/2,y:a.ty*TILE_SIZE+TILE_SIZE/2,life:1.0,color:'#f9a825'});
     spawnParticles(a.tx*TILE_SIZE+TILE_SIZE/2, a.ty*TILE_SIZE+TILE_SIZE/2, '#f9a825', 5);
     animals = animals.filter(x=>x!==a);
     playCollectSound('meat');
+    checkAchievements();
   }
   activeMining = null;
   saveGame();
@@ -583,7 +615,45 @@ function doActualLevelUp(){
   }
   flyingTexts.push({text:`🎉 Уровень ${currentLevel}`,x:player.x,y:player.y-60,life:2.5,color:'#ffd700'});
   playLevelUpSound();
+  checkAchievements();
   saveGame();
+}
+
+// ===================== ПИТОМЦЫ =====================
+function updatePet(dt){
+  if(!activePet) return;
+  petTimer -= dt;
+  if(activePet === 'dog'){
+    if(petTimer <= 0){
+      petTimer = 3;
+      let nearest = null, minD = TILE_SIZE*4;
+      for(let r of resources){
+        if(r.state !== 'idle') continue;
+        const d = Math.hypot(player.x - (r.tx*TILE_SIZE+TILE_SIZE/2), player.y - (r.ty*TILE_SIZE+TILE_SIZE/2));
+        if(d < minD){ minD = d; nearest = r; }
+      }
+      if(nearest){
+        if(nearest.type === 'stone' && !upgrades.tools.stone) return;
+        if(nearest.type === 'gold' && !upgrades.tools.gold) return;
+        if(nearest.type === 'diamond' && !upgrades.tools.diamond) return;
+        addResource(nearest.type, 1);
+        stats.mined++;
+        updateDailyQuest('mine', 1);
+        flyingTexts.push({text:`🐕 +1`,x:nearest.tx*TILE_SIZE+TILE_SIZE/2,y:nearest.ty*TILE_SIZE+TILE_SIZE/2,life:1.0,color:'#4caf50'});
+        spawnParticles(nearest.tx*TILE_SIZE+TILE_SIZE/2, nearest.ty*TILE_SIZE+TILE_SIZE/2, RESOURCE_TYPES[nearest.type].color, 4);
+        nearest.state = 'respawning';
+        nearest.respawnTimer = 15+currentLevel*2;
+        saveGame();
+      }
+    }
+  } else if(activePet === 'parrot'){
+    if(petTimer <= 0){
+      petTimer = 30;
+      balance += 5;
+      flyingTexts.push({text:`🦜 +5 💰`,x:player.x,y:player.y-40,life:1.5,color:'#ffd700'});
+      saveGame();
+    }
+  }
 }
 
 // ===================== ЧАСТИЦЫ =====================
@@ -659,10 +729,13 @@ function updateProjectiles(dt){
         playHitSound();
         if(w.health <= 0){
           w.state = 'dead';
+          stats.wolves++;
+          updateDailyQuest('wolf', 1);
           addResource('meat', 2);
           balance += 15;
           spawnParticles(w.x, w.y, '#f44336', 8);
           flyingTexts.push({text:`+2 🍗 +15 💰`,x:w.x,y:w.y-40,life:1.5,color:'#4caf50'});
+          checkAchievements();
         }
         hit = true; break;
       }
@@ -707,25 +780,19 @@ function playerAttack(){
   const now = performance.now() / 1000;
   if(now - lastAttackTime < weapon.cooldown) return;
   lastAttackTime = now;
-
   let dirX = player.facingDir.x, dirY = player.facingDir.y;
   const len = Math.sqrt(dirX*dirX + dirY*dirY);
   if(len < 0.01){ dirX = player.facing; dirY = 0; }
   else { dirX /= len; dirY /= len; }
-
   const angle = Math.atan2(dirY, dirX);
   spawnSlash(player.x + dirX*20, player.y + dirY*20, angle, weapon.range, weapon.color);
-
   let damage = weapon.damage;
   if(upgrades.tools.stone) damage += 3;
   if(upgrades.tools.gold) damage += 6;
-  if(steelSwordActive) damage += 15;
-
   if(weapon.ranged){
     spawnProjectile(player.x + dirX*12, player.y + dirY*12, dirX, dirY, damage, weapon.range);
     return;
   }
-
   let hitAny = false;
   for(let w of wolves){
     if(w.state === 'dead') continue;
@@ -741,10 +808,13 @@ function playerAttack(){
     hitAny = true;
     if(w.health <= 0){
       w.state = 'dead';
+      stats.wolves++;
+      updateDailyQuest('wolf', 1);
       addResource('meat', 2);
       balance += 15;
       spawnParticles(w.x, w.y, '#f44336', 8);
       flyingTexts.push({text:`+2 🍗 +15 💰`,x:w.x,y:w.y-40,life:1.5,color:'#4caf50'});
+      checkAchievements();
     }
   }
   for(let b of bosses){
@@ -766,22 +836,26 @@ function onBossDefeated(b){
   const idx = bosses.indexOf(b);
   if(idx !== -1) bosses.splice(idx, 1);
   bossActive = false;
+  stats.bosses++;
   const reward = 300 + currentLevel * 100;
   balance += reward;
-  addResource('crystal', 3);
-  addResource('steel', 5);
+  addResource('diamond', 3);
   spawnParticles(b.x, b.y, '#ffd700', 20);
   flyingTexts.push({text:`👹 ПОБЕДА! +${reward}💰`,x:b.x,y:b.y-40,life:3.0,color:'#ffd700'});
   playLevelUpSound();
+  checkAchievements();
   saveGame();
   checkLevelUp();
 }
 function eatMeat(){
   if(inventory.meat > 0 && playerHealth < playerMaxHealth){
     inventory.meat--;
+    stats.meatEaten++;
     playerHealth = Math.min(playerMaxHealth, playerHealth + MEAT_HEAL);
+    playerHunger = Math.min(MAX_HUNGER, playerHunger + 30);
     flyingTexts.push({text:`+${MEAT_HEAL} ❤️`,x:player.x,y:player.y-40,life:1.5,color:'#4caf50'});
     playHealSound();
+    checkAchievements();
     saveGame();
   }
 }
@@ -790,12 +864,653 @@ function onPlayerDeath(){
   for(let k in inventory) inventory[k] = Math.floor(inventory[k] * (1 - DEATH_RESOURCE_LOSS));
   balance = Math.floor(balance * (1 - DEATH_MONEY_LOSS));
   deathBanner = 3.0;
+  stats.deaths++;
   player.x = CANVAS_WIDTH/2; player.y = CANVAS_HEIGHT/2;
   playerHealth = playerMaxHealth;
   wolves = wolves.filter(w => Math.hypot(player.x - w.x, player.y - w.y) > 300);
   comboCount = 0;
   playDeathSound();
+  checkAchievements();
   saveGame();
+}
+
+// ===================== МУЛЬТИПЛЕЕР =====================
+let mpDatabase = null;
+let mpRoomRef = null;
+let mpPlayerRef = null;
+let mpSyncInterval = null;
+let mpChatRef = null;
+
+function initFirebase(){
+  if(!window.FIREBASE_CONFIG || !window.FIREBASE_CONFIG.databaseURL) {
+    return false;
+  }
+  try {
+    if(!firebase.apps.length){
+      firebase.initializeApp(window.FIREBASE_CONFIG);
+    }
+    mpDatabase = firebase.database();
+    return true;
+  } catch(e) {
+    console.error('Firebase init error:', e);
+    return false;
+  }
+}
+
+function openMpMenu(){
+  if(!initFirebase()){
+    alert('Firebase не настроен!\n\nОткрой index.html и вставь свой databaseURL из Firebase.');
+    return;
+  }
+  gameState = STATE_MP_MENU;
+  if(isMobile) showMobileControls(false);
+}
+
+function createRoom(nickname, roomName, password){
+  if(!mpDatabase) return;
+  const roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
+  mp.roomId = roomId;
+  mp.isHost = true;
+  mp.nickname = nickname;
+  mp.roomName = roomName;
+  mp.password = password;
+  mp.connected = true;
+  mp.chatMessages = [];
+  const roomRef = mpDatabase.ref('rooms/' + roomId);
+  roomRef.set({
+    name: roomName,
+    password: password,
+    host: nickname,
+    createdAt: Date.now(),
+    status: 'lobby',
+    players: {
+      [nickname]: { joined: Date.now(), ready: true }
+    }
+  });
+  mpRoomRef = roomRef;
+  mpPlayerRef = roomRef.child('players').child(nickname);
+  // Слушаем чат
+  mpChatRef = roomRef.child('chat');
+  mpChatRef.on('child_added', snap => {
+    const msg = snap.val();
+    if(msg) mp.chatMessages.push(msg);
+    if(mp.chatMessages.length > 20) mp.chatMessages.shift();
+  });
+  // Слушаем изменения в комнате
+  roomRef.on('value', snap => {
+    const data = snap.val();
+    if(!data){ leaveMultiplayer(); return; }
+    if(data.status === 'playing' && gameState === STATE_MP_LOBBY){
+      startMultiplayerGame();
+    }
+  });
+  gameState = STATE_MP_LOBBY;
+  if(isMobile) showMobileControls(false);
+}
+
+function joinRoom(roomId, nickname, password){
+  if(!mpDatabase) return false;
+  const roomRef = mpDatabase.ref('rooms/' + roomId);
+  return roomRef.once('value').then(snap => {
+    const data = snap.val();
+    if(!data) { alert('Комната не найдена'); return false; }
+    if(data.password !== password) { alert('Неверный пароль'); return false; }
+    if(Object.keys(data.players || {}).length >= 2) { alert('Комната заполнена'); return false; }
+    mp.roomId = roomId;
+    mp.isHost = false;
+    mp.nickname = nickname;
+    mp.roomName = data.name;
+    mp.password = password;
+    mp.connected = true;
+    mp.chatMessages = [];
+    roomRef.child('players').child(nickname).set({ joined: Date.now(), ready: true });
+    mpRoomRef = roomRef;
+    mpPlayerRef = roomRef.child('players').child(nickname);
+    // Чат
+    mpChatRef = roomRef.child('chat');
+    mpChatRef.on('child_added', snap => {
+      const msg = snap.val();
+      if(msg) mp.chatMessages.push(msg);
+      if(mp.chatMessages.length > 20) mp.chatMessages.shift();
+    });
+    // Хост нажал старт
+    roomRef.on('value', snap => {
+      const d = snap.val();
+      if(!d){ leaveMultiplayer(); return; }
+      if(d.status === 'playing' && gameState === STATE_MP_LOBBY){
+        startMultiplayerGame();
+      }
+    });
+    gameState = STATE_MP_LOBBY;
+    if(isMobile) showMobileControls(false);
+    return true;
+  }).catch(err => {
+    alert('Ошибка: ' + err.message);
+    return false;
+  });
+}
+
+function startMultiplayerGame(){
+  if(!mp.isHost) return;
+  if(!mpRoomRef) return;
+  // Генерируем карту на хосте
+  currentLevel = 1;
+  targetMoney = getTargetForLevel(1);
+  balance = 0;
+  playerHealth = MAX_HEALTH;
+  playerHunger = MAX_HUNGER;
+  generateMap(1);
+  generateResources(1);
+  generateAnimals(1);
+  generateWolves(1);
+  generateBoss(1);
+  player.x = CANVAS_WIDTH/4; player.y = CANVAS_HEIGHT/2;
+  // Отправляем параметры карты в Firebase
+  const mapData = {
+    seed: Date.now(),
+    resources: resources.map(r => ({ type: r.type, tx: r.tx, ty: r.ty }))
+  };
+  mpRoomRef.update({
+    status: 'playing',
+    mapData: mapData
+  });
+  startMpSync();
+  mp.stats.games++;
+  gameState = STATE_MP_GAME;
+  if(isMobile) showMobileControls(true);
+}
+
+function startMpSync(){
+  if(mpSyncInterval) clearInterval(mpSyncInterval);
+  mpSyncInterval = setInterval(() => {
+    if(!mpPlayerRef || !mp.connected) return;
+    mpPlayerRef.update({
+      x: player.x,
+      y: player.y,
+      level: currentLevel,
+      balance: balance
+    });
+  }, 100);
+
+  if(!mpRoomRef) return;
+  // Слушаем второго игрока
+  mpRoomRef.child('players').on('value', snap => {
+    const players = snap.val() || {};
+    const others = Object.keys(players).filter(n => n !== mp.nickname);
+    if(others.length > 0){
+      const name = others[0];
+      const p = players[name];
+      if(p && p.x !== undefined){
+        mp.remotePlayer = {
+          nickname: name,
+          x: p.x,
+          y: p.y,
+          level: p.level,
+          balance: p.balance
+        };
+      }
+    } else {
+      mp.remotePlayer = null;
+    }
+  });
+
+  // Слушаем карту (если мы клиент)
+  if(!mp.isHost){
+    mpRoomRef.child('mapData').once('value').then(snap => {
+      const data = snap.val();
+      if(data){
+        currentLevel = 1;
+        targetMoney = getTargetForLevel(1);
+        generateMap(1);
+        resources = data.resources.map(r => ({ type:r.type, tx:r.tx, ty:r.ty, state:'idle', respawnTimer:0, particleTimer:0 }));
+        generateAnimals(1);
+        generateWolves(1);
+        generateBoss(1);
+        player.x = CANVAS_WIDTH * 3/4; player.y = CANVAS_HEIGHT/2;
+        startMpSync();
+        mp.stats.games++;
+        gameState = STATE_MP_GAME;
+        if(isMobile) showMobileControls(true);
+      }
+    });
+  }
+}
+
+function sendChatMessage(text){
+  if(!mpChatRef || !text.trim()) return;
+  mpChatRef.push({
+    author: mp.nickname,
+    text: text.trim(),
+    time: Date.now()
+  });
+}
+
+function leaveMultiplayer(){
+  if(mpSyncInterval) { clearInterval(mpSyncInterval); mpSyncInterval = null; }
+  if(mpPlayerRef){
+    mpPlayerRef.remove();
+  }
+  if(mpRoomRef && mp.isHost){
+    mpRoomRef.remove();
+  }
+  if(mpChatRef){
+    mpChatRef.off();
+  }
+  if(mpRoomRef){
+    mpRoomRef.off();
+  }
+  mp.roomId = null;
+  mp.isHost = false;
+  mp.connected = false;
+  mp.remotePlayer = null;
+  mp.chatMessages = [];
+  mpRoomRef = null;
+  mpPlayerRef = null;
+  mpChatRef = null;
+  gameState = STATE_MP_MENU;
+  if(isMobile) showMobileControls(false);
+}
+
+function drawMpMenu(){
+  ctx.fillStyle='#0a0a1e'; ctx.fillRect(0,0,CANVAS_WIDTH,CANVAS_HEIGHT);
+  ctx.fillStyle='#fff'; ctx.font='bold 32px "Courier New"'; ctx.textAlign='center';
+  ctx.fillText('🌐 Мультиплеер', CANVAS_WIDTH/2, 50);
+  ctx.font='14px "Courier New"'; ctx.fillStyle='#a5d6a7';
+  ctx.fillText('Играйте с другом по сети через Firebase', CANVAS_WIDTH/2, 80);
+
+  const btnW = 350, btnH = 60, startY = 140, gap = 80;
+  drawButton(CANVAS_WIDTH/2 - btnW/2, startY, btnW, btnH, '➕ Создать комнату', '#4caf50');
+  drawButton(CANVAS_WIDTH/2 - btnW/2, startY + gap, btnW, btnH, '🔍 Войти в комнату', '#2196f3');
+
+  ctx.fillStyle='#666'; ctx.font='12px "Courier New"';
+  ctx.fillText('Требуется интернет и настроенный Firebase', CANVAS_WIDTH/2, CANVAS_HEIGHT - 100);
+
+  drawButton(CANVAS_WIDTH/2 - 100, CANVAS_HEIGHT - 60, 200, 42, '← Назад', '#888');
+  canvas.mpMenuButtons = [
+    { x:CANVAS_WIDTH/2 - btnW/2, y:startY, w:btnW, h:btnH, action:'create' },
+    { x:CANVAS_WIDTH/2 - btnW/2, y:startY+gap, w:btnW, h:btnH, action:'join' },
+    { x:CANVAS_WIDTH/2 - 100, y:CANVAS_HEIGHT - 60, w:200, h:42, action:'back' }
+  ];
+  canvas.mpInputMode = null;
+  canvas.mpInputValue = '';
+  canvas.mpRoomName = '';
+  canvas.mpPassword = '';
+}
+
+function drawMpLobby(){
+  ctx.fillStyle='#0a0a1e'; ctx.fillRect(0,0,CANVAS_WIDTH,CANVAS_HEIGHT);
+  ctx.fillStyle='#fff'; ctx.font='bold 28px "Courier New"'; ctx.textAlign='center';
+  ctx.fillText('🏠 Лобби', CANVAS_WIDTH/2, 40);
+
+  ctx.font='16px "Courier New"';
+  ctx.fillStyle='#ffd700';
+  ctx.fillText(`Комната: ${mp.roomName || ''}`, CANVAS_WIDTH/2, 80);
+  ctx.fillStyle='#4caf50';
+  ctx.font='bold 24px "Courier New"';
+  ctx.fillText(`Код: ${mp.roomId}`, CANVAS_WIDTH/2, 115);
+
+  ctx.font='13px "Courier New"'; ctx.fillStyle='#a5d6a7';
+  ctx.fillText('Передай код другу (и пароль)', CANVAS_WIDTH/2, 140);
+
+  // Игроки
+  ctx.fillStyle='#fff'; ctx.font='bold 16px "Courier New"';
+  ctx.fillText('Игроки:', CANVAS_WIDTH/2, 180);
+  ctx.font='14px "Courier New"';
+  ctx.fillText(`👤 ${mp.nickname} (хост)`, CANVAS_WIDTH/2, 205);
+
+  if(mp.remotePlayer || mp.connected){
+    if(mp.remotePlayer){
+      ctx.fillStyle='#4caf50';
+      ctx.fillText(`👤 ${mp.remotePlayer.nickname}`, CANVAS_WIDTH/2, 230);
+    } else {
+      ctx.fillStyle='#888';
+      ctx.fillText('⏳ Ожидание друга...', CANVAS_WIDTH/2, 230);
+    }
+  }
+
+  // Чат
+  ctx.fillStyle='#1e1e2e';
+  ctx.fillRect(40, 260, CANVAS_WIDTH - 80, 200);
+  ctx.fillStyle='#fff'; ctx.font='bold 14px "Courier New"'; ctx.textAlign='left';
+  ctx.fillText('💬 Чат:', 55, 285);
+  ctx.font='12px "Courier New"';
+  let cy = 305;
+  for(let m of mp.chatMessages.slice(-8)){
+    ctx.fillStyle = m.author === mp.nickname ? '#4caf50' : '#ffd700';
+    ctx.fillText(`${m.author}:`, 55, cy);
+    ctx.fillStyle='#fff';
+    ctx.fillText(m.text, 130, cy);
+    cy += 18;
+  }
+
+  // Поле ввода чата
+  ctx.fillStyle='#2d2d4d';
+  ctx.fillRect(40, 470, CANVAS_WIDTH - 80, 35);
+  ctx.strokeStyle='#555';
+  ctx.strokeRect(40, 470, CANVAS_WIDTH - 80, 35);
+  ctx.fillStyle = canvas.mpChatActive ? '#fff' : '#888';
+  ctx.font='14px "Courier New"';
+  ctx.fillText(canvas.mpChatInput || 'Нажми, чтобы писать...', 55, 493);
+
+  // Кнопки
+  const btnY = CANVAS_HEIGHT - 100;
+  if(mp.isHost){
+    drawButton(CANVAS_WIDTH/2 - 200, btnY, 200, 45, '▶ Начать игру', '#4caf50');
+    drawButton(CANVAS_WIDTH/2 + 5, btnY, 190, 45, '🚪 Выйти', '#f44336');
+    canvas.mpLobbyButtons = [
+      { x:CANVAS_WIDTH/2 - 200, y:btnY, w:200, h:45, action:'start' },
+      { x:CANVAS_WIDTH/2 + 5, y:btnY, w:190, h:45, action:'leave' }
+    ];
+  } else {
+    drawButton(CANVAS_WIDTH/2 - 100, btnY, 200, 45, '🚪 Выйти', '#f44336');
+    ctx.fillStyle='#aaa'; ctx.font='12px "Courier New"'; ctx.textAlign='center';
+    ctx.fillText('Ждём, пока хост начнёт игру...', CANVAS_WIDTH/2, btnY - 20);
+    canvas.mpLobbyButtons = [
+      { x:CANVAS_WIDTH/2 - 100, y:btnY, w:200, h:45, action:'leave' }
+    ];
+  }
+  canvas.mpChatBox = { x:40, y:470, w:CANVAS_WIDTH - 80, h:35 };
+}
+
+function drawMpGame(){
+  // Обычная игра + второй игрок
+  renderPlaying();
+  // Отрисовка второго игрока
+  if(mp.remotePlayer){
+    const rp = mp.remotePlayer;
+    ctx.save();
+    ctx.translate(rp.x, rp.y);
+    ctx.fillStyle='rgba(0,0,0,0.3)';
+    ctx.beginPath(); ctx.ellipse(0,8,11,6,0,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle='#2196f3';
+    ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(-6,12); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(6,12); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0,-6); ctx.lineTo(0,0); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0,-6); ctx.lineTo(-8,4); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0,-6); ctx.lineTo(8,4); ctx.stroke();
+    ctx.fillStyle='#2196f3';
+    ctx.beginPath(); ctx.arc(0,-14,8,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#fff';
+    ctx.beginPath(); ctx.arc(-3,-16,2,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(3,-16,2,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#000';
+    ctx.beginPath(); ctx.arc(-3,-16,1,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(3,-16,1,0,Math.PI*2); ctx.fill();
+    // Ник
+    ctx.fillStyle='#fff'; ctx.font='bold 12px "Courier New"'; ctx.textAlign='center';
+    ctx.fillText(rp.nickname, 0, -30);
+    ctx.restore();
+  }
+
+  // Кнопка выйти
+  if(!isMobile){
+    drawButton(15, CANVAS_HEIGHT - 50, 120, 35, '← Выйти', '#f44336', true, 12);
+    canvas.mpLeaveButton = { x:15, y:CANVAS_HEIGHT - 50, w:120, h:35 };
+  }
+}
+
+// ===================== PVP =====================
+function getRank(rating){
+  let rank = RANKS[0];
+  for(let r of RANKS){ if(rating >= r.min) rank = r; }
+  return rank;
+}
+function openPvpMenu(){
+  if(!gameWasStarted) return;
+  gameState = STATE_PVP_MENU;
+  if(isMobile) showMobileControls(false);
+}
+function startPvpBattle(opponentId){
+  const opp = PVP_OPPONENTS.find(o=>o.id===opponentId);
+  if(!opp) return;
+  pvpPlayer = {
+    x: 100, y: CANVAS_HEIGHT/2,
+    health: playerMaxHealth, maxHealth: playerMaxHealth,
+    damage: 15 + (upgrades.tools.gold ? 10 : 0) + (upgrades.tools.diamond ? 15 : 0),
+    speed: 150, radius: 14, walkCycle: 0, facing: 1, attackCooldown: 0, invulnTimer: 0
+  };
+  pvpOpponent = {
+    x: CANVAS_WIDTH - 100, y: CANVAS_HEIGHT/2,
+    health: opp.hp, maxHealth: opp.hp,
+    damage: opp.damage, speed: opp.speed, radius: 14,
+    walkCycle: 0, facing: -1, attackCooldown: 0, icon: opp.icon, config: opp
+  };
+  pvpResult = null;
+  gameState = STATE_PVP_ARENA;
+  if(isMobile) showMobileControls(true);
+  playLevelUpSound();
+}
+function pvpPlayerAttack(){
+  if(!pvpPlayer || !pvpOpponent) return;
+  if(pvpPlayer.attackCooldown > 0) return;
+  pvpPlayer.attackCooldown = 0.5;
+  const dx = pvpOpponent.x - pvpPlayer.x;
+  const dy = pvpOpponent.y - pvpPlayer.y;
+  const dist = Math.hypot(dx, dy);
+  if(dist < 60){
+    pvpOpponent.health -= pvpPlayer.damage;
+    spawnParticles(pvpOpponent.x, pvpOpponent.y, '#ff9800', 8);
+    flyingTexts.push({text:`⚔️ -${pvpPlayer.damage}`,x:pvpOpponent.x,y:pvpOpponent.y-30,life:1.0,color:'#ff9800'});
+    playHitSound();
+    if(pvpOpponent.health <= 0) endPvpBattle(true);
+  } else playHitSound();
+}
+function endPvpBattle(win){
+  const opp = pvpOpponent.config;
+  let reward = 0, ratingChange = 0;
+  if(win){
+    pvp.wins++;
+    pvp.winStreak++;
+    if(pvp.winStreak > pvp.bestStreak) pvp.bestStreak = pvp.winStreak;
+    reward = opp.reward;
+    ratingChange = opp.ratingWin;
+    balance += reward;
+    pvp.rating += ratingChange;
+    if(pvp.winStreak % 3 === 0){
+      const bonus = 100 * (pvp.winStreak / 3);
+      balance += bonus;
+      reward += bonus;
+    }
+  } else {
+    pvp.losses++;
+    pvp.winStreak = 0;
+    ratingChange = -opp.ratingLoss;
+    pvp.rating = Math.max(0, pvp.rating - opp.ratingLoss);
+  }
+  pvp.battles.unshift({ opp: opp.name, win, rating: pvp.rating, time: Date.now() });
+  if(pvp.battles.length > 10) pvp.battles.pop();
+  pvpResult = { win, reward, ratingChange, opp };
+  gameState = STATE_PVP_RESULT;
+  if(win) playLevelUpSound();
+  else playDeathSound();
+  checkAchievements();
+  saveGame();
+}
+function exitPvpArena(){
+  gameState = STATE_PVP_MENU;
+  pvpPlayer = null;
+  pvpOpponent = null;
+  if(isMobile) showMobileControls(false);
+}
+function updatePvpArena(dt){
+  if(!pvpPlayer) return;
+  let dx = 0, dy = 0;
+  if(keys['ArrowLeft']||keys['KeyA']) dx -= 1;
+  if(keys['ArrowRight']||keys['KeyD']) dx += 1;
+  if(keys['ArrowUp']||keys['KeyW']) dy -= 1;
+  if(keys['ArrowDown']||keys['KeyS']) dy += 1;
+  if(joystickActive){ dx += joystickDX; dy += joystickDY; }
+  if(Math.abs(dx)>0.01 || Math.abs(dy)>0.01){
+    const len = Math.sqrt(dx*dx+dy*dy);
+    if(len > 1){ dx /= len; dy /= len; }
+    pvpPlayer.x += dx * pvpPlayer.speed * dt;
+    pvpPlayer.y += dy * pvpPlayer.speed * dt;
+    if(dx > 0) pvpPlayer.facing = 1;
+    else if(dx < 0) pvpPlayer.facing = -1;
+    pvpPlayer.walkCycle += pvpPlayer.speed * dt * 0.02;
+  } else pvpPlayer.walkCycle *= 0.9;
+  pvpPlayer.x = Math.max(30, Math.min(CANVAS_WIDTH-30, pvpPlayer.x));
+  pvpPlayer.y = Math.max(30, Math.min(CANVAS_HEIGHT-30, pvpPlayer.y));
+  if(pvpPlayer.attackCooldown > 0) pvpPlayer.attackCooldown -= dt;
+  if(pvpPlayer.invulnTimer > 0) pvpPlayer.invulnTimer -= dt;
+
+  if(!pvpOpponent) return;
+  pvpOpponent.attackCooldown -= dt;
+  const edx = pvpPlayer.x - pvpOpponent.x;
+  const edy = pvpPlayer.y - pvpOpponent.y;
+  const edist = Math.hypot(edx, edy);
+  if(edist > 40){
+    const en = edist < 1 ? 1 : edist;
+    pvpOpponent.x += (edx/en) * pvpOpponent.speed * dt;
+    pvpOpponent.y += (edy/en) * pvpOpponent.speed * dt;
+    pvpOpponent.walkCycle += pvpOpponent.speed * dt * 0.02;
+  }
+  if(edist < 50 && pvpOpponent.attackCooldown <= 0){
+    if(pvpPlayer.invulnTimer <= 0){
+      pvpPlayer.health -= pvpOpponent.damage;
+      pvpPlayer.invulnTimer = 0.8;
+      spawnParticles(pvpPlayer.x, pvpPlayer.y, '#ff1744', 8);
+      flyingTexts.push({text:`-${pvpOpponent.damage}`,x:pvpPlayer.x,y:pvpPlayer.y-30,life:1.0,color:'#ff1744'});
+      playHurtSound();
+      if(pvpPlayer.health <= 0){ pvpPlayer.health = 0; endPvpBattle(false); }
+    }
+    pvpOpponent.attackCooldown = 1.2;
+  }
+  updateParticles(dt);
+  updateFlyingTexts(dt);
+}
+function drawPvpArena(){
+  ctx.fillStyle = '#1a1a2e'; ctx.fillRect(0,0,CANVAS_WIDTH,CANVAS_HEIGHT);
+  ctx.fillStyle = '#2d2d4d';
+  ctx.beginPath();
+  ctx.arc(CANVAS_WIDTH/2, CANVAS_HEIGHT/2, Math.min(CANVAS_WIDTH,CANVAS_HEIGHT)/2 - 40, 0, Math.PI*2);
+  ctx.fill();
+  ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.arc(CANVAS_WIDTH/2, CANVAS_HEIGHT/2, Math.min(CANVAS_WIDTH,CANVAS_HEIGHT)/2 - 40, 0, Math.PI*2);
+  ctx.stroke();
+
+  if(pvpPlayer){
+    ctx.save(); ctx.translate(pvpPlayer.x, pvpPlayer.y);
+    const skin = SKINS.find(s=>s.id===equippedSkin) || SKINS[0];
+    if(pvpPlayer.invulnTimer > 0 && Math.floor(pvpPlayer.invulnTimer*20)%2 === 0) ctx.globalAlpha = 0.5;
+    ctx.fillStyle='rgba(0,0,0,0.3)';
+    ctx.beginPath(); ctx.ellipse(0,8,12,6,0,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle = skin.colorBody; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(-6,12); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(6,12); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0,-6); ctx.lineTo(0,0); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0,-6); ctx.lineTo(-8,4); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0,-6); ctx.lineTo(8,4); ctx.stroke();
+    ctx.fillStyle = skin.colorHead;
+    ctx.beginPath(); ctx.arc(0,-14,8,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle = '#000'; ctx.lineWidth = 1; ctx.stroke();
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(-3,-16,2,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(3,-16,2,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#000';
+    ctx.beginPath(); ctx.arc(-3,-16,1,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(3,-16,1,0,Math.PI*2); ctx.fill();
+    ctx.globalAlpha = 1; ctx.restore();
+    const hpBarW = 200, hpBarH = 18;
+    ctx.fillStyle='#333'; ctx.fillRect(30, 30, hpBarW, hpBarH);
+    ctx.fillStyle='#4caf50'; ctx.fillRect(30, 30, hpBarW*(pvpPlayer.health/pvpPlayer.maxHealth), hpBarH);
+    ctx.strokeStyle='#fff'; ctx.strokeRect(30, 30, hpBarW, hpBarH);
+    ctx.fillStyle='#fff'; ctx.font='bold 12px "Courier New"'; ctx.textAlign='center';
+    ctx.fillText(`ВЫ: ${Math.ceil(pvpPlayer.health)}/${pvpPlayer.maxHealth}`, 30 + hpBarW/2, 43);
+  }
+
+  if(pvpOpponent){
+    ctx.save(); ctx.translate(pvpOpponent.x, pvpOpponent.y);
+    ctx.fillStyle='rgba(0,0,0,0.3)';
+    ctx.beginPath(); ctx.ellipse(0,8,16,8,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#8b0000';
+    ctx.beginPath(); ctx.ellipse(0,0,20,14,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#4a0000';
+    ctx.beginPath(); ctx.arc(-14,-4,10,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#ffeb3b';
+    ctx.beginPath(); ctx.arc(-17,-6,2.5,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(-11,-6,2.5,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#000';
+    ctx.beginPath(); ctx.arc(-17,-6,1.2,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(-11,-6,1.2,0,Math.PI*2); ctx.fill();
+    ctx.font = '24px "Courier New"'; ctx.textAlign='center';
+    ctx.fillText(pvpOpponent.icon, 0, -22);
+    ctx.restore();
+    const hpBarW = 200, hpBarH = 18;
+    ctx.fillStyle='#333'; ctx.fillRect(CANVAS_WIDTH - 30 - hpBarW, 30, hpBarW, hpBarH);
+    ctx.fillStyle='#f44336'; ctx.fillRect(CANVAS_WIDTH - 30 - hpBarW, 30, hpBarW*(pvpOpponent.health/pvpOpponent.maxHealth), hpBarH);
+    ctx.strokeStyle='#fff'; ctx.strokeRect(CANVAS_WIDTH - 30 - hpBarW, 30, hpBarW, hpBarH);
+    ctx.fillStyle='#fff'; ctx.font='bold 12px "Courier New"'; ctx.textAlign='center';
+    ctx.fillText(`${pvpOpponent.config.name}: ${Math.ceil(pvpOpponent.health)}/${pvpOpponent.maxHealth}`, CANVAS_WIDTH - 30 - hpBarW/2, 43);
+  }
+
+  drawParticles();
+  drawFlyingTexts();
+
+  ctx.fillStyle='rgba(255,255,255,0.6)'; ctx.font='12px "Courier New"'; ctx.textAlign='center';
+  if(!isMobile) ctx.fillText('WASD — движение | Q или ПРОБЕЛ — атака | Esc — выйти', CANVAS_WIDTH/2, CANVAS_HEIGHT - 30);
+  else ctx.fillText('Джойстик — движение | ⚔️ — атака', CANVAS_WIDTH/2, CANVAS_HEIGHT - 100);
+}
+function drawPvpMenu(){
+  ctx.fillStyle='#1a1a2e'; ctx.fillRect(0,0,CANVAS_WIDTH,CANVAS_HEIGHT);
+  ctx.fillStyle='#fff'; ctx.font='bold 32px "Courier New"'; ctx.textAlign='center';
+  ctx.fillText('⚔️ PvP Арена', CANVAS_WIDTH/2, 50);
+  const rank = getRank(pvp.rating);
+  ctx.font='16px "Courier New"'; ctx.fillStyle=rank.color;
+  ctx.fillText(`${rank.name} — ${pvp.rating} очков`, CANVAS_WIDTH/2, 85);
+  ctx.fillStyle='#a5d6a7'; ctx.font='13px "Courier New"';
+  ctx.fillText(`Побед: ${pvp.wins} | Поражений: ${pvp.losses} | Серия: ${pvp.winStreak} (лучшая: ${pvp.bestStreak})`, CANVAS_WIDTH/2, 108);
+  ctx.fillStyle='#fff'; ctx.font='bold 16px "Courier New"';
+  ctx.fillText('Выбери противника:', CANVAS_WIDTH/2, 145);
+  const btnW = 500, btnH = 55, startY = 170;
+  canvas.pvpButtons = [];
+  for(let i=0;i<PVP_OPPONENTS.length;i++){
+    const opp = PVP_OPPONENTS[i];
+    const x = CANVAS_WIDTH/2 - btnW/2;
+    const y = startY + i * (btnH + 8);
+    ctx.fillStyle = '#2d2d4d'; ctx.fillRect(x, y, btnW, btnH);
+    ctx.strokeStyle = '#555'; ctx.strokeRect(x, y, btnW, btnH);
+    ctx.fillStyle='#fff'; ctx.font='bold 16px "Courier New"'; ctx.textAlign='left';
+    ctx.fillText(`${opp.icon} ${opp.name}`, x + 20, y + 22);
+    ctx.font='12px "Courier New"'; ctx.fillStyle='#ccc';
+    ctx.fillText(`Сложность: ${opp.difficulty} | HP: ${opp.hp} | Урон: ${opp.damage}`, x + 20, y + 42);
+    ctx.textAlign='right'; ctx.fillStyle='#ffd700'; ctx.font='bold 14px "Courier New"';
+    ctx.fillText(`+${opp.reward}💰 +${opp.ratingWin} рейт`, x + btnW - 20, y + 32);
+    canvas.pvpButtons.push({ x, y, w:btnW, h:btnH, oppId:opp.id });
+  }
+  drawButton(CANVAS_WIDTH/2 - 100, CANVAS_HEIGHT - 55, 200, 42, '← Назад', '#888');
+  canvas.pvpBackButton = { x:CANVAS_WIDTH/2 - 100, y:CANVAS_HEIGHT - 55, w:200, h:42 };
+}
+function drawPvpResult(){
+  ctx.fillStyle='#1a1a2e'; ctx.fillRect(0,0,CANVAS_WIDTH,CANVAS_HEIGHT);
+  if(!pvpResult) return;
+  const win = pvpResult.win;
+  ctx.fillStyle = win ? '#4caf50' : '#f44336';
+  ctx.font='bold 64px "Courier New"'; ctx.textAlign='center';
+  ctx.fillText(win ? '🏆 ПОБЕДА!' : '💀 ПОРАЖЕНИЕ', CANVAS_WIDTH/2, CANVAS_HEIGHT/2 - 100);
+  ctx.fillStyle='#fff'; ctx.font='bold 24px "Courier New"';
+  ctx.fillText(`Противник: ${pvpResult.opp.name}`, CANVAS_WIDTH/2, CANVAS_HEIGHT/2 - 40);
+  ctx.font='22px "Courier New"';
+  if(win){
+    ctx.fillStyle='#ffd700';
+    ctx.fillText(`+${pvpResult.reward} монет`, CANVAS_WIDTH/2, CANVAS_HEIGHT/2 + 10);
+    ctx.fillStyle='#4caf50';
+    ctx.fillText(`+${pvpResult.ratingChange} рейтинга`, CANVAS_WIDTH/2, CANVAS_HEIGHT/2 + 45);
+  } else {
+    ctx.fillStyle='#f44336';
+    ctx.fillText(`${pvpResult.ratingChange} рейтинга`, CANVAS_WIDTH/2, CANVAS_HEIGHT/2 + 10);
+  }
+  const rank = getRank(pvp.rating);
+  ctx.fillStyle=rank.color; ctx.font='bold 18px "Courier New"';
+  ctx.fillText(`${rank.name} — ${pvp.rating}`, CANVAS_WIDTH/2, CANVAS_HEIGHT/2 + 100);
+  drawButton(CANVAS_WIDTH/2 - 120, CANVAS_HEIGHT - 150, 240, 45, '⚔️ Снова', '#4caf50', true, 16);
+  drawButton(CANVAS_WIDTH/2 - 120, CANVAS_HEIGHT - 90, 240, 45, '← К арене', '#888', true, 16);
+  canvas.pvpResultButtons = [
+    { x:CANVAS_WIDTH/2 - 120, y:CANVAS_HEIGHT - 150, w:240, h:45, action:'again' },
+    { x:CANVAS_WIDTH/2 - 120, y:CANVAS_HEIGHT - 90, w:240, h:45, action:'back' }
+  ];
 }
 
 // ===================== ОБНОВЛЕНИЯ =====================
@@ -831,7 +1546,6 @@ function updateWolves(dt){
       if(distSq < 400 && w.attackCooldown <= 0){
         if(playerInvulnTimer <= 0){
           let dmg = WOLF_DAMAGE;
-          if(ironShieldActive) dmg = Math.floor(dmg * 0.7);
           playerHealth -= dmg;
           playerHurtTimer = 0.4;
           playerInvulnTimer = 1.0;
@@ -884,7 +1598,6 @@ function updateBoss(dt){
     if(distSq < 900 && b.attackCooldown <= 0){
       if(playerInvulnTimer <= 0){
         let dmg = 20;
-        if(ironShieldActive) dmg = Math.floor(dmg * 0.7);
         playerHealth -= dmg;
         playerHurtTimer = 0.5;
         playerInvulnTimer = 1.2;
@@ -944,6 +1657,9 @@ function updatePlaying(dt){
     fairCooldown -= dt;
     if(fairCooldown <= 0) fairCooldown = 0;
   }
+  playerHunger -= HUNGER_DRAIN * dt;
+  if(playerHunger < 0) playerHunger = 0;
+  updatePet(dt);
 
   if(levelTransitionPhase === 'darken'){
     levelTransition += dt * 2.5;
@@ -965,6 +1681,8 @@ function updatePlaying(dt){
       if(len > 1){ dx /= len; dy /= len; }
       let speed = BASE_SPEED * (1 + upgrades.speed*0.2);
       if(speedBoostTimer > 0) speed *= 1.5;
+      if(playerHunger < 30) speed *= 0.7;
+      if(playerHunger < 10) speed *= 0.5;
       if(currentBiome.ice){
         player.slideVX = player.slideVX * 0.92 + dx * speed * 0.08;
         player.slideVY = player.slideVY * 0.92 + dy * speed * 0.08;
@@ -1008,25 +1726,19 @@ function drawMap(){
   const grassColor = currentBiome.grass;
   const detailColor = currentBiome.grassDetail;
   const t = animTime;
-
   for(let ty=0;ty<MAP_HEIGHT;ty++){
     for(let tx=0;tx<MAP_WIDTH;tx++){
       const tile = map[ty][tx], x=tx*TILE_SIZE, y=ty*TILE_SIZE;
       ctx.fillStyle = grassColor;
       ctx.fillRect(x,y,TILE_SIZE,TILE_SIZE);
-      if(tile === groundTile || tile === TILE_CAVE){
+      if(tile === groundTile){
         ctx.fillStyle = detailColor;
         for(let i=0;i<3;i++){
           const bx = x+4+(i*7+tx*3)%24, by = y+4+(i*5+ty*2)%24;
           ctx.fillRect(bx,by,2,4);
         }
       }
-      if(tile === TILE_CAVE){
-        ctx.fillStyle = 'rgba(0,0,0,0.6)';
-        ctx.fillRect(x,y,TILE_SIZE,TILE_SIZE);
-        ctx.fillStyle = 'rgba(100,100,150,0.2)';
-        ctx.fillRect(x+4,y+4,TILE_SIZE-8,TILE_SIZE-8);
-      } else if(tile===TILE_STONE){
+      if(tile===TILE_STONE){
         ctx.fillStyle='#7a8c8d'; ctx.fillRect(x+2,y+2,TILE_SIZE-4,TILE_SIZE-4);
         ctx.fillStyle='#5b6e6f';
         ctx.beginPath(); ctx.arc(x+TILE_SIZE/2,y+TILE_SIZE/2,10,0,Math.PI*2); ctx.fill();
@@ -1078,35 +1790,12 @@ function drawResources(){
       ctx.closePath(); ctx.fill();
       ctx.fillStyle = `rgba(255,255,255,${g})`;
       ctx.beginPath(); ctx.arc(-2,-3,2.5,0,Math.PI*2); ctx.fill();
-    } else if(res.type==='iron'){
-      ctx.fillStyle = cfg.color;
-      ctx.beginPath();
-      ctx.moveTo(-10,-6); ctx.lineTo(10,-6); ctx.lineTo(10,8); ctx.lineTo(-10,8); ctx.closePath(); ctx.fill();
-      ctx.fillStyle='#6d6d6d';
-      ctx.fillRect(-6,-3,4,3); ctx.fillRect(2,0,4,3);
-    } else if(res.type==='steel'){
-      ctx.fillStyle = cfg.color;
-      ctx.beginPath();
-      ctx.moveTo(-10,-8); ctx.lineTo(10,-8); ctx.lineTo(8,8); ctx.lineTo(-8,8); ctx.closePath(); ctx.fill();
-      ctx.fillStyle='#9e9e9e'; ctx.fillRect(-6,-4,12,3);
-    } else if(res.type==='crystal'){
-      const g = 0.6+0.4*Math.sin(res.particleTimer*Math.PI*2);
-      ctx.fillStyle = cfg.color;
-      ctx.beginPath();
-      ctx.moveTo(0,-14); ctx.lineTo(8,-2); ctx.lineTo(4,12); ctx.lineTo(-4,12); ctx.lineTo(-8,-2);
-      ctx.closePath(); ctx.fill();
-      ctx.fillStyle = `rgba(255,255,255,${g*0.7})`;
-      ctx.beginPath(); ctx.moveTo(0,-14); ctx.lineTo(3,-2); ctx.lineTo(0,6); ctx.lineTo(-3,-2); ctx.closePath(); ctx.fill();
     }
     ctx.restore();
-
     let needsTool = false;
     if(res.type==='stone' && !upgrades.tools.stone) needsTool = true;
     else if(res.type==='gold' && !upgrades.tools.gold) needsTool = true;
     else if(res.type==='diamond' && !upgrades.tools.diamond) needsTool = true;
-    else if(res.type==='iron' && !upgrades.tools.iron) needsTool = true;
-    else if(res.type==='steel' && !upgrades.tools.steel) needsTool = true;
-    else if(res.type==='crystal' && !upgrades.tools.crystal) needsTool = true;
     if(needsTool && res.state==='idle'){
       ctx.font = '16px "Courier New"'; ctx.textAlign = 'center';
       ctx.fillStyle = 'rgba(255,82,82,0.9)';
@@ -1208,6 +1897,33 @@ function drawTreasure(){
   ctx.fillRect(cx - 3, cy - 3, 6, 6);
   ctx.restore();
 }
+function drawPet(){
+  if(!activePet) return;
+  const angle = animTime * 1.5;
+  const px = player.x + Math.cos(angle) * 30;
+  const py = player.y + Math.sin(angle) * 20 + 10;
+  ctx.save();
+  ctx.translate(px, py);
+  if(activePet === 'dog'){
+    ctx.fillStyle = '#8d6e63';
+    ctx.beginPath(); ctx.ellipse(0, 0, 8, 5, 0, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#5d4037';
+    ctx.beginPath(); ctx.arc(-5, -3, 4, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#000';
+    ctx.beginPath(); ctx.arc(-6, -4, 1, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(-3, -4, 1, 0, Math.PI*2); ctx.fill();
+  } else if(activePet === 'parrot'){
+    ctx.fillStyle = '#4caf50';
+    ctx.beginPath(); ctx.ellipse(0, 0, 7, 5, 0, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#f44336';
+    ctx.beginPath(); ctx.arc(-5, -2, 3, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#000';
+    ctx.beginPath(); ctx.arc(-6, -3, 1, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#ffeb3b';
+    ctx.beginPath(); ctx.moveTo(-8, -1); ctx.lineTo(-11, -3); ctx.lineTo(-8, -4); ctx.closePath(); ctx.fill();
+  }
+  ctx.restore();
+}
 function drawPlayer(){
   const skin = SKINS.find(s=>s.id===equippedSkin) || SKINS[0];
   const weapon = getCurrentWeapon();
@@ -1215,28 +1931,22 @@ function drawPlayer(){
   ctx.translate(player.x, player.y);
   ctx.fillStyle='rgba(0,0,0,0.25)';
   ctx.beginPath(); ctx.ellipse(0,8,11,6,0,0,Math.PI*2); ctx.fill();
-
   const phase = player.walkCycle * Math.PI * 2;
   const isMoving = Math.abs(player.walkCycle) > 0.05;
   const legSwing = isMoving ? Math.sin(phase) * 5 : 0;
   const armSwing = isMoving ? Math.sin(phase) * 4 : 0;
   const bob = isMoving ? Math.abs(Math.sin(phase)) * 2 : 0;
   const bodyOffsetY = -bob;
-
   if(playerInvulnTimer > 0 && Math.floor(playerInvulnTimer*20)%2 === 0) ctx.globalAlpha = 0.5;
-
-  ctx.strokeStyle = skin.colorBody;
-  ctx.lineWidth = 3;
+  ctx.strokeStyle = skin.colorBody; ctx.lineWidth = 3;
   ctx.beginPath(); ctx.moveTo(0, bodyOffsetY); ctx.lineTo(-6 + legSwing, bodyOffsetY + 12); ctx.stroke();
   ctx.beginPath(); ctx.moveTo(0, bodyOffsetY); ctx.lineTo(6 - legSwing, bodyOffsetY + 12); ctx.stroke();
   ctx.beginPath(); ctx.moveTo(0, bodyOffsetY - 6); ctx.lineTo(0, bodyOffsetY); ctx.stroke();
   ctx.beginPath(); ctx.moveTo(0, bodyOffsetY - 6); ctx.lineTo(-8 + armSwing, bodyOffsetY + 4); ctx.stroke();
   ctx.beginPath(); ctx.moveTo(0, bodyOffsetY - 6); ctx.lineTo(8 - armSwing, bodyOffsetY + 4); ctx.stroke();
-
   ctx.fillStyle = skin.colorHead;
   ctx.beginPath(); ctx.arc(0, bodyOffsetY - 14, 8, 0, Math.PI*2); ctx.fill();
   ctx.strokeStyle = '#000'; ctx.lineWidth = 1; ctx.stroke();
-
   const eyeShift = player.facing * 1.5;
   ctx.fillStyle = '#fff';
   ctx.beginPath(); ctx.arc(-3+eyeShift, bodyOffsetY-16, 2, 0, Math.PI*2); ctx.fill();
@@ -1244,52 +1954,29 @@ function drawPlayer(){
   ctx.fillStyle = '#000';
   ctx.beginPath(); ctx.arc(-3+eyeShift*1.5, bodyOffsetY-16, 1, 0, Math.PI*2); ctx.fill();
   ctx.beginPath(); ctx.arc(3+eyeShift*1.5, bodyOffsetY-16, 1, 0, Math.PI*2); ctx.fill();
-
-  if(skin.hat === 'cowboy'){
-    ctx.fillStyle='#5d4037';
-    ctx.fillRect(-10, bodyOffsetY-28, 20, 6);
-    ctx.fillRect(-6, bodyOffsetY-34, 12, 6);
-  } else if(skin.hat === 'helmet'){
-    ctx.fillStyle='#9e9e9e';
-    ctx.beginPath(); ctx.arc(0, bodyOffsetY-18, 9, Math.PI, 0); ctx.fill();
-  } else if(skin.hat === 'ninja'){
-    ctx.fillStyle='#000';
-    ctx.fillRect(-9, bodyOffsetY-22, 18, 8);
-  } else if(skin.hat === 'wizard'){
-    ctx.fillStyle='#4a148c';
+  if(equippedAccessory === 'hat'){
+    ctx.fillStyle = '#212121';
+    ctx.fillRect(-10, bodyOffsetY-24, 20, 3);
+    ctx.fillRect(-6, bodyOffsetY-34, 12, 10);
+  } else if(equippedAccessory === 'crown'){
+    ctx.fillStyle = '#ffd700';
     ctx.beginPath();
-    ctx.moveTo(-10, bodyOffsetY-22);
-    ctx.lineTo(10, bodyOffsetY-22);
-    ctx.lineTo(0, bodyOffsetY-40);
-    ctx.closePath(); ctx.fill();
+    ctx.moveTo(-9, bodyOffsetY-22); ctx.lineTo(-9, bodyOffsetY-30);
+    ctx.lineTo(-5, bodyOffsetY-25); ctx.lineTo(0, bodyOffsetY-32);
+    ctx.lineTo(5, bodyOffsetY-25); ctx.lineTo(9, bodyOffsetY-30);
+    ctx.lineTo(9, bodyOffsetY-22); ctx.closePath(); ctx.fill();
+  } else if(equippedAccessory === 'glasses'){
+    ctx.strokeStyle = '#000'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(-3+eyeShift, bodyOffsetY-16, 3.5, 0, Math.PI*2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(3+eyeShift, bodyOffsetY-16, 3.5, 0, Math.PI*2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-0.5+eyeShift, bodyOffsetY-16); ctx.lineTo(0.5+eyeShift, bodyOffsetY-16); ctx.stroke();
   }
-
   const wx = 8 - armSwing;
   const wy = bodyOffsetY + 4;
-  ctx.font = '14px "Courier New"';
-  ctx.textAlign = 'center';
+  ctx.font = '14px "Courier New"'; ctx.textAlign = 'center';
   ctx.fillText(weapon.icon, wx + player.facing*3, wy);
-
-  if(flashlightActive){
-    ctx.font = '12px "Courier New"';
-    ctx.fillText('🔦', -wx - player.facing*3, wy - 5);
-  }
-
   ctx.globalAlpha = 1;
   ctx.restore();
-
-  if(flashlightActive){
-    const playerTX = Math.floor(player.x / TILE_SIZE);
-    const playerTY = Math.floor(player.y / TILE_SIZE);
-    if(playerTX >= 0 && playerTX < MAP_WIDTH && playerTY >= 0 && playerTY < MAP_HEIGHT && map[playerTY][playerTX] === TILE_CAVE){
-      const grad = ctx.createRadialGradient(player.x, player.y, 0, player.x, player.y, 80);
-      grad.addColorStop(0, 'rgba(255,240,180,0.35)');
-      grad.addColorStop(1, 'rgba(255,240,180,0)');
-      ctx.fillStyle = grad;
-      ctx.fillRect(0,0,CANVAS_WIDTH,CANVAS_HEIGHT);
-    }
-  }
-
   if(activeMining){
     const elapsed = (performance.now()/1000 - activeMining.startTime) % 0.5;
     for(let i=0;i<2;i++){
@@ -1315,14 +2002,25 @@ function drawHUD(){
   ctx.fillStyle='#fff'; ctx.font='bold 12px "Courier New"'; ctx.textAlign='center';
   ctx.fillText(`❤️ ${Math.ceil(playerHealth)} / ${playerMaxHealth}`, hpX + hpW/2, hpY + 13);
   ctx.textAlign='left';
-
+  const hungerY = hpY + 22;
+  ctx.fillStyle='#333'; ctx.fillRect(hpX, hungerY, hpW, 10);
+  const hungerPct = playerHunger / MAX_HUNGER;
+  let hungerColor = '#ff9800';
+  if(hungerPct < 0.3) hungerColor = '#f44336';
+  ctx.fillStyle = hungerColor;
+  ctx.fillRect(hpX, hungerY, hpW * hungerPct, 10);
+  ctx.strokeStyle='#fff'; ctx.strokeRect(hpX, hungerY, hpW, 10);
+  ctx.fillStyle='#fff'; ctx.font='bold 10px "Courier New"'; ctx.textAlign='center';
+  ctx.fillText(`🍽️ ${Math.ceil(playerHunger)}`, hpX + hpW/2, hungerY + 8);
+  ctx.textAlign='left';
   ctx.fillStyle='#fff'; ctx.font='bold 20px "Courier New"';
-  ctx.fillText(`💰 ${balance}`, 15, 55);
-
+  ctx.fillText(`💰 ${balance}`, 15, 70);
   ctx.font='12px "Courier New"'; ctx.fillStyle='#a5d6a7';
-  ctx.fillText(currentBiome.name, 15, 72);
-
-  const progressX = 200, progressY = 15, progressW = 200, progressH = 14;
+  ctx.fillText(currentBiome.name, 15, 86);
+  const rank = getRank(pvp.rating);
+  ctx.fillStyle = rank.color;
+  ctx.fillText(`${rank.name} — ${pvp.rating}`, 15, 102);
+  const progressX = 220, progressY = 15, progressW = 200, progressH = 14;
   ctx.fillStyle='#333'; ctx.fillRect(progressX, progressY, progressW, progressH);
   const progress = Math.min(1, balance/targetMoney);
   ctx.fillStyle='#ffd700'; ctx.fillRect(progressX, progressY, progressW*progress, progressH);
@@ -1330,7 +2028,6 @@ function drawHUD(){
   ctx.fillStyle='#fff'; ctx.font='14px "Courier New"'; ctx.textAlign='center';
   ctx.fillText(`Уровень ${currentLevel}${isBossLevel(currentLevel)?' 👹':''}`, progressX + progressW/2, progressY - 6);
   ctx.fillText(`${balance}/${targetMoney}`, progressX + progressW/2, progressY + progressH + 14);
-
   if(comboCount > 0){
     ctx.textAlign='center';
     ctx.fillStyle='#ff5722'; ctx.font='bold 14px "Courier New"';
@@ -1341,17 +2038,15 @@ function drawHUD(){
     ctx.fillStyle='#ffd700'; ctx.font='bold 16px "Courier New"';
     ctx.fillText(`🎪 ЯРМАРКА x2! ${Math.ceil(fairTimer)}с`, CANVAS_WIDTH/2, 60);
   }
-
   const weapon = getCurrentWeapon();
   ctx.textAlign='right';
   ctx.fillStyle='#fff'; ctx.font='bold 16px "Courier New"';
   ctx.fillText(`${weapon.icon} ${weapon.name}`, CANVAS_WIDTH - 15, 30);
-
   const invX = CANVAS_WIDTH - 120, invY = 50;
   ctx.font='12px "Courier New"'; ctx.textAlign='left';
   let iy = invY;
-  const resList = ['stone','wood','gold','diamond','iron','steel','crystal','meat'];
-  const icons = {stone:'🪨',wood:'🪵',gold:'✨',diamond:'💎',iron:'⚙️',steel:'🔩',crystal:'🔮',meat:'🍗'};
+  const resList = ['stone','wood','gold','diamond','meat'];
+  const icons = {stone:'🪨',wood:'🪵',gold:'✨',diamond:'💎',meat:'🍗'};
   for(let key of resList){
     if(inventory[key] > 0){
       ctx.fillStyle='#eee';
@@ -1359,12 +2054,10 @@ function drawHUD(){
       iy += 15;
     }
   }
-
   if(!isMobile){
     ctx.fillStyle='rgba(255,255,255,0.6)'; ctx.font='11px "Courier New"';
-    ctx.fillText('E — действие | Q — атака | F — мясо | I — инвентарь | B — постройки | M — магазин', 15, CANVAS_HEIGHT - 15);
+    ctx.fillText('E — действие | Q — атака | F — мясо | I — инвентарь | K — достижения | M — магазин | P — арена', 15, CANVAS_HEIGHT - 15);
   }
-
   if(!isMobile){
     const menuX = CANVAS_WIDTH - 40, menuY = CANVAS_HEIGHT - 40;
     ctx.fillStyle='#333'; ctx.fillRect(menuX-15,menuY-15,30,30);
@@ -1408,18 +2101,15 @@ function drawInventory(){
   ctx.fillStyle='rgba(0,0,0,0.9)'; ctx.fillRect(0,0,CANVAS_WIDTH,CANVAS_HEIGHT);
   ctx.fillStyle='#fff'; ctx.font='bold 28px "Courier New"'; ctx.textAlign='center';
   ctx.fillText('🎒 Инвентарь', CANVAS_WIDTH/2, 45);
-
   const panelX = 40, panelY = 80, panelW = 380, panelH = CANVAS_HEIGHT - 165;
   ctx.fillStyle='#1e1e1e'; ctx.fillRect(panelX, panelY, panelW, panelH);
   ctx.strokeStyle='#444'; ctx.strokeRect(panelX, panelY, panelW, panelH);
   ctx.fillStyle='#fff'; ctx.font='bold 18px "Courier New"'; ctx.textAlign='left';
   ctx.fillText('Ресурсы', panelX + 20, panelY + 28);
-
   const resList = [
     {key:'stone',icon:'🪨',name:'Камень'},{key:'wood',icon:'🪵',name:'Дерево'},
     {key:'gold',icon:'✨',name:'Золото'},{key:'diamond',icon:'💎',name:'Алмаз'},
-    {key:'iron',icon:'⚙️',name:'Железо'},{key:'steel',icon:'🔩',name:'Сталь'},
-    {key:'crystal',icon:'🔮',name:'Кристалл'},{key:'meat',icon:'🍗',name:'Мясо'}
+    {key:'meat',icon:'🍗',name:'Мясо'}
   ];
   let ry = panelY + 55;
   ctx.font='15px "Courier New"';
@@ -1431,258 +2121,189 @@ function drawInventory(){
     ctx.fillText(`${inventory[r.key]}`, panelX + panelW - 20, ry);
     ry += 28;
   }
-
   const panel2X = CANVAS_WIDTH/2 + 20, panel2Y = 80, panel2W = CANVAS_WIDTH/2 - 60, panel2H = CANVAS_HEIGHT - 165;
   ctx.fillStyle='#1e1e1e'; ctx.fillRect(panel2X, panel2Y, panel2W, panel2H);
   ctx.strokeStyle='#444'; ctx.strokeRect(panel2X, panel2Y, panel2W, panel2H);
   ctx.fillStyle='#fff'; ctx.font='bold 18px "Courier New"'; ctx.textAlign='left';
-  ctx.fillText('Экипировка и эффекты', panel2X + 20, panel2Y + 28);
-
+  ctx.fillText('Экипировка', panel2X + 20, panel2Y + 28);
   const weapon = getCurrentWeapon();
   const skin = SKINS.find(s=>s.id===equippedSkin) || SKINS[0];
   ctx.font='14px "Courier New"'; ctx.fillStyle='#fff';
   ctx.fillText(`⚔️ ${weapon.icon} ${weapon.name} (урон ${weapon.damage})`, panel2X + 20, panel2Y + 58);
   ctx.fillText(`👤 Скин: ${skin.name}`, panel2X + 20, panel2Y + 80);
   ctx.fillText(`🌍 Биом: ${currentBiome.name}`, panel2X + 20, panel2Y + 102);
-
+  if(activePet){
+    const pet = PETS.find(p=>p.id===activePet);
+    ctx.fillText(`🐾 ${pet.name}`, panel2X + 20, panel2Y + 124);
+  }
+  const rank = getRank(pvp.rating);
+  ctx.fillStyle = rank.color; ctx.font='bold 14px "Courier New"';
+  ctx.fillText(`⚔️ PvP: ${rank.name} — ${pvp.rating}`, panel2X + 20, panel2Y + 152);
+  ctx.fillStyle='#ccc'; ctx.font='12px "Courier New"';
+  ctx.fillText(`Побед: ${pvp.wins} | Поражений: ${pvp.losses}`, panel2X + 20, panel2Y + 172);
   ctx.fillStyle='#fff'; ctx.font='bold 16px "Courier New"';
-  ctx.fillText('Активные эффекты:', panel2X + 20, panel2Y + 135);
+  ctx.fillText('Активные эффекты:', panel2X + 20, panel2Y + 200);
   ctx.font='12px "Courier New"';
-  let ey = panel2Y + 158;
+  let ey = panel2Y + 222;
   const effects = [];
   if(speedBoostTimer > 0) effects.push({c:'#4caf50', t:`⚡ Зелье скорости (${Math.ceil(speedBoostTimer)}с)`});
   if(miningBoostActive) effects.push({c:'#2196f3', t:'⛏ Каменная броня'});
   if(goldPickaxeActive) effects.push({c:'#ffd700', t:'✨ Золотая кирка x2'});
-  if(ironShieldActive) effects.push({c:'#9e9e9e', t:'🛡 Железный щит -30%'});
-  if(steelSwordActive) effects.push({c:'#cfd8dc', t:'⚔️ Стальной меч +15'});
-  if(crystalAmuletActive) effects.push({c:'#e040fb', t:'🔮 Кристальный амулет'});
-  if(fastMiningActive) effects.push({c:'#ff9800', t:'⚙️ Скоростной бур'});
-  if(compassActive) effects.push({c:'#ffd700', t:'🧭 Золотой компас'});
-  if(luckyCharmActive) effects.push({c:'#4caf50', t:'🍀 Амулет удачи'});
-  if(flashlightActive) effects.push({c:'#fff59d', t:'🔦 Фонарик'});
-  if(built.house) effects.push({c:'#8d6e63', t:'🏠 Дом +10%💰'});
-  if(built.workbench) effects.push({c:'#2196f3', t:'🔨 Верстак'});
-  if(built.furnace) effects.push({c:'#ff9800', t:'🔥 Печь'});
   if(fairActive) effects.push({c:'#ffd700', t:`🎪 Ярмарка x2 (${Math.ceil(fairTimer)}с)`});
   if(effects.length === 0){
     ctx.fillStyle='#666';
     ctx.fillText('Нет активных эффектов', panel2X + 20, ey);
   } else {
-    for(let e of effects){
-      ctx.fillStyle = e.c;
-      ctx.fillText(e.t, panel2X + 20, ey);
-      ey += 18;
-    }
+    for(let e of effects){ ctx.fillStyle = e.c; ctx.fillText(e.t, panel2X + 20, ey); ey += 18; }
   }
-
+  if(dailyQuest){
+    ctx.fillStyle='#ffd700'; ctx.font='bold 14px "Courier New"';
+    ctx.fillText(`📅 ${dailyQuest.name}`, panel2X + 20, CANVAS_HEIGHT - 160);
+    ctx.fillStyle='#fff'; ctx.font='12px "Courier New"';
+    ctx.fillText(`Прогресс: ${dailyQuest.progress}/${dailyQuest.target}${dailyQuest.done?' ✅':''}`, panel2X + 20, CANVAS_HEIGHT - 140);
+  }
   drawButton(CANVAS_WIDTH/2 - 100, CANVAS_HEIGHT - 60, 200, 42, '✖ Закрыть (I)', '#888');
   canvas.inventoryCloseButton = { x:CANVAS_WIDTH/2 - 100, y:CANVAS_HEIGHT - 60, w:200, h:42 };
 }
 
-// ===================== ПОСТРОЙКИ =====================
-function openBuild(){
+// ===================== ДОСТИЖЕНИЯ =====================
+function openAchievements(){
   if(gameState !== STATE_PLAYING) return;
-  gameState = STATE_BUILD;
+  gameState = STATE_ACHIEVEMENTS;
   if(isMobile) showMobileControls(false);
 }
-function closeBuild(){
+function closeAchievements(){
   gameState = STATE_PLAYING;
   if(isMobile) showMobileControls(true);
 }
-function drawBuildMenu(){
-  ctx.fillStyle='rgba(0,0,0,0.9)'; ctx.fillRect(0,0,CANVAS_WIDTH,CANVAS_HEIGHT);
+function drawAchievements(){
+  ctx.fillStyle='rgba(0,0,0,0.93)'; ctx.fillRect(0,0,CANVAS_WIDTH,CANVAS_HEIGHT);
   ctx.fillStyle='#fff'; ctx.font='bold 28px "Courier New"'; ctx.textAlign='center';
-  ctx.fillText('🏗️ Постройки', CANVAS_WIDTH/2, 50);
-
-  const lineH = 75;
-  let y = 120;
-  canvas.buildItems = [];
-
-  for(let b of BUILDINGS){
-    const isBuilt = built[b.id];
-    const levelOk = currentLevel >= b.level;
-    const canBuy = !isBuilt && levelOk && canBuild(b);
-
-    ctx.fillStyle = isBuilt ? '#1e3a1e' : (canBuy ? '#333' : '#222');
-    ctx.fillRect(CANVAS_WIDTH/2 - 300, y, 600, 65);
-    ctx.strokeStyle = isBuilt ? '#4caf50' : '#555';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(CANVAS_WIDTH/2 - 300, y, 600, 65);
-
-    ctx.fillStyle='#fff'; ctx.font='bold 20px "Courier New"'; ctx.textAlign='left';
-    ctx.fillText(b.name, CANVAS_WIDTH/2 - 280, y + 26);
-    ctx.font='13px "Courier New"'; ctx.fillStyle='#ccc';
-    ctx.fillText(b.desc, CANVAS_WIDTH/2 - 280, y + 48);
-
-    ctx.textAlign='right';
-    if(isBuilt){
-      ctx.fillStyle='#4caf50'; ctx.font='bold 16px "Courier New"';
-      ctx.fillText('✅ Построено', CANVAS_WIDTH/2 + 280, y + 36);
-    } else if(!levelOk){
-      ctx.fillStyle='#ff9800'; ctx.font='14px "Courier New"';
-      ctx.fillText(`🔒 Ур. ${b.level}`, CANVAS_WIDTH/2 + 280, y + 36);
-    } else {
-      const costStr = Object.entries(b.cost).map(([k,v])=>`${v}${(RESOURCE_TYPES[k]?.name||k).slice(0,3)}`).join(' ');
-      ctx.fillStyle = canBuy ? '#4caf50' : '#f44336';
-      ctx.font='14px "Courier New"';
-      ctx.fillText(costStr, CANVAS_WIDTH/2 + 280, y + 26);
-      ctx.fillStyle = canBuy ? '#4caf50' : '#888';
-      ctx.font='12px "Courier New"';
-      ctx.fillText(canBuy ? 'Нажми, чтобы построить' : 'Не хватает ресурсов', CANVAS_WIDTH/2 + 280, y + 48);
-    }
-
-    if(!isBuilt && levelOk && canBuy){
-      canvas.buildItems.push({ x: CANVAS_WIDTH/2 - 300, y, w:600, h:65, action:'build_'+b.id });
-    }
-
-    y += lineH;
+  ctx.fillText('🏆 Достижения', CANVAS_WIDTH/2, 40);
+  ctx.font='14px "Courier New"'; ctx.fillStyle='#a5d6a7';
+  ctx.fillText(`Открыто: ${unlockedAchievements.length} / ${ACHIEVEMENTS.length}`, CANVAS_WIDTH/2, 65);
+  const startY = 85;
+  const lineH = 28;
+  const colW = CANVAS_WIDTH - 100;
+  const maxVisible = Math.floor((CANVAS_HEIGHT - startY - 90) / lineH);
+  for(let i=0;i<Math.min(ACHIEVEMENTS.length, maxVisible);i++){
+    const a = ACHIEVEMENTS[i];
+    const unlocked = unlockedAchievements.includes(a.id);
+    const y = startY + i * lineH;
+    ctx.fillStyle = unlocked ? '#1e3a1e' : '#222';
+    ctx.fillRect(50, y, colW, 24);
+    ctx.strokeStyle = unlocked ? '#4caf50' : '#444';
+    ctx.strokeRect(50, y, colW, 24);
+    ctx.font='bold 12px "Courier New"'; ctx.textAlign='left';
+    ctx.fillStyle = unlocked ? '#4caf50' : '#888';
+    ctx.fillText(unlocked ? '✅' : '🔒', 60, y + 17);
+    ctx.fillStyle = unlocked ? '#fff' : '#999';
+    ctx.fillText(a.name, 85, y + 16);
+    ctx.textAlign='right'; ctx.fillStyle = unlocked ? '#4caf50' : '#666';
+    ctx.font='bold 11px "Courier New"';
+    ctx.fillText(`+${a.reward}💰`, 50 + colW - 15, y + 16);
   }
-
-  if(built.furnace){
-    ctx.fillStyle='#3a1e1e'; ctx.fillRect(CANVAS_WIDTH/2 - 300, y, 600, 65);
-    ctx.strokeStyle='#ff9800'; ctx.strokeRect(CANVAS_WIDTH/2 - 300, y, 600, 65);
-    ctx.fillStyle='#fff'; ctx.font='bold 20px "Courier New"'; ctx.textAlign='left';
-    ctx.fillText('🔥 Переплавить', CANVAS_WIDTH/2 - 280, y + 26);
-    ctx.font='13px "Courier New"'; ctx.fillStyle='#ccc';
-    ctx.fillText('3 камня→1 железо, 3 железа→1 сталь', CANVAS_WIDTH/2 - 280, y + 48);
-    ctx.textAlign='right';
-    const canIron = inventory.stone >= 3;
-    const canSteel = inventory.iron >= 3;
-    if(canSteel){
-      ctx.fillStyle='#4caf50'; ctx.font='bold 15px "Courier New"';
-      ctx.fillText('Железо→Сталь ✓', CANVAS_WIDTH/2 + 280, y + 36);
-    } else if(canIron){
-      ctx.fillStyle='#4caf50'; ctx.font='bold 15px "Courier New"';
-      ctx.fillText('Камень→Железо ✓', CANVAS_WIDTH/2 + 280, y + 36);
-    } else {
-      ctx.fillStyle='#888'; ctx.font='13px "Courier New"';
-      ctx.fillText('Нет ресурсов', CANVAS_WIDTH/2 + 280, y + 36);
-    }
-    canvas.buildItems.push({ x: CANVAS_WIDTH/2 - 300, y, w:600, h:65, action:'furnace_smelt' });
-    y += lineH;
-  }
-
-  drawButton(CANVAS_WIDTH/2 - 100, CANVAS_HEIGHT - 60, 200, 42, '✖ Закрыть (B)', '#888');
-  canvas.buildCloseButton = { x:CANVAS_WIDTH/2 - 100, y:CANVAS_HEIGHT - 60, w:200, h:42 };
-}
-function canBuild(b){
-  for(let [k,v] of Object.entries(b.cost)){
-    if((inventory[k]||0) < v) return false;
-  }
-  return true;
-}
-function build(id){
-  const b = BUILDINGS.find(x=>x.id===id);
-  if(!b || built[id] || !canBuild(b)) return;
-  for(let [k,v] of Object.entries(b.cost)) inventory[k] -= v;
-  built[id] = true;
-  saveGame();
-  flyingTexts.push({text:`🏗️ ${b.name} построен!`,x:player.x,y:player.y-40,life:2.5,color:'#4caf50'});
-  playLevelUpSound();
-}
-function furnaceSmelt(){
-  if(inventory.iron >= 3){
-    inventory.iron -= 3;
-    inventory.steel += 1;
-    flyingTexts.push({text:`🔥 +1 Сталь`,x:player.x,y:player.y-40,life:1.5,color:'#c0c0c0'});
-    playCollectSound('steel');
-    saveGame();
-  } else if(inventory.stone >= 3){
-    inventory.stone -= 3;
-    inventory.iron += 1;
-    flyingTexts.push({text:`🔥 +1 Железо`,x:player.x,y:player.y-40,life:1.5,color:'#8d8d8d'});
-    playCollectSound('iron');
-    saveGame();
-  }
+  drawButton(CANVAS_WIDTH/2 - 100, CANVAS_HEIGHT - 55, 200, 42, '✖ Закрыть (K)', '#888');
+  canvas.achievementsCloseButton = { x:CANVAS_WIDTH/2 - 100, y:CANVAS_HEIGHT - 55, w:200, h:42 };
 }
 
 // ===================== МЕНЮ =====================
 function drawMenu(){
   ctx.fillStyle='rgba(0,0,0,0.75)'; ctx.fillRect(0,0,CANVAS_WIDTH,CANVAS_HEIGHT);
-  ctx.fillStyle='#fff'; ctx.font='bold 38px "Courier New"'; ctx.textAlign='center';
-  ctx.fillText("Miner's Quest", CANVAS_WIDTH/2, 90);
-  ctx.font='15px "Courier New"'; ctx.fillStyle='#a5d6a7';
-  ctx.fillText('Этапы 1-4: Волки, Оружие, Постройки, Биомы, Боссы', CANVAS_WIDTH/2, 118);
-  const btnW=230, btnH=40, startY=150, gap=47;
+  ctx.fillStyle='#fff'; ctx.font='bold 36px "Courier New"'; ctx.textAlign='center';
+  ctx.fillText("Miner's Quest", CANVAS_WIDTH/2, 40);
+  ctx.font='14px "Courier New"'; ctx.fillStyle='#a5d6a7';
+  ctx.fillText('Этап 7: Мультиплеер', CANVAS_WIDTH/2, 65);
+  const rank = getRank(pvp.rating);
+  ctx.font='12px "Courier New"'; ctx.fillStyle=rank.color;
+  ctx.fillText(`${rank.name} — ${pvp.rating}`, CANVAS_WIDTH/2, 88);
+  const btnW=220, btnH=34, startY=105, gap=39;
   drawButton(CANVAS_WIDTH/2 - btnW/2, startY, btnW, btnH, '▶ Играть', '#4caf50');
-  drawButton(CANVAS_WIDTH/2 - btnW/2, startY + gap, btnW, btnH, '🛒 Магазин', gameWasStarted ? '#2196f3' : '#555', gameWasStarted);
-  drawButton(CANVAS_WIDTH/2 - btnW/2, startY + gap*2, btnW, btnH, '❓ Как играть', '#ff9800');
-  drawButton(CANVAS_WIDTH/2 - btnW/2, startY + gap*3, btnW, btnH, '🔄 Сбросить', '#f44336');
+  drawButton(CANVAS_WIDTH/2 - btnW/2, startY + gap, btnW, btnH, '🌐 Мультиплеер', '#9c27b0');
+  drawButton(CANVAS_WIDTH/2 - btnW/2, startY + gap*2, btnW, btnH, '⚔️ PvP Арена', '#f44336');
+  drawButton(CANVAS_WIDTH/2 - btnW/2, startY + gap*3, btnW, btnH, '🛒 Магазин', gameWasStarted ? '#2196f3' : '#555', gameWasStarted);
+  drawButton(CANVAS_WIDTH/2 - btnW/2, startY + gap*4, btnW, btnH, '❓ Как играть', '#ff9800');
+  drawButton(CANVAS_WIDTH/2 - btnW/2, startY + gap*5, btnW, btnH, `🎵 Музыка: ${musicEnabled?'ВКЛ':'ВЫКЛ'}`, '#673ab7');
+  drawButton(CANVAS_WIDTH/2 - btnW/2, startY + gap*6, btnW, btnH, '🔄 Сбросить', '#888');
   canvas.menuButtons = [
     { x:CANVAS_WIDTH/2 - btnW/2, y:startY, w:btnW, h:btnH, action:'play' },
-    { x:CANVAS_WIDTH/2 - btnW/2, y:startY+gap, w:btnW, h:btnH, action:'shop', active:gameWasStarted },
-    { x:CANVAS_WIDTH/2 - btnW/2, y:startY+gap*2, w:btnW, h:btnH, action:'howto' },
-    { x:CANVAS_WIDTH/2 - btnW/2, y:startY+gap*3, w:btnW, h:btnH, action:'reset' }
+    { x:CANVAS_WIDTH/2 - btnW/2, y:startY+gap, w:btnW, h:btnH, action:'multiplayer' },
+    { x:CANVAS_WIDTH/2 - btnW/2, y:startY+gap*2, w:btnW, h:btnH, action:'pvp' },
+    { x:CANVAS_WIDTH/2 - btnW/2, y:startY+gap*3, w:btnW, h:btnH, action:'shop', active:gameWasStarted },
+    { x:CANVAS_WIDTH/2 - btnW/2, y:startY+gap*4, w:btnW, h:btnH, action:'howto' },
+    { x:CANVAS_WIDTH/2 - btnW/2, y:startY+gap*5, w:btnW, h:btnH, action:'music' },
+    { x:CANVAS_WIDTH/2 - btnW/2, y:startY+gap*6, w:btnW, h:btnH, action:'reset' }
   ];
 }
 function drawHowToPlay(){
   ctx.fillStyle='rgba(0,0,0,0.92)'; ctx.fillRect(0,0,CANVAS_WIDTH,CANVAS_HEIGHT);
   ctx.fillStyle='#fff'; ctx.font='bold 22px "Courier New"'; ctx.textAlign='center';
-  ctx.fillText('Как играть', CANVAS_WIDTH/2, 30);
+  ctx.fillText('Как играть', CANVAS_WIDTH/2, 20);
   ctx.font='11px "Courier New"'; ctx.textAlign='left';
   const lines = isMobile ? [
     '📱 Управление:',
-    '   Джойстик | ⛏ добыча | ⚔️ атака | 🍗 мясо',
-    '   🎒 инвентарь | 🛒 магазин | ☰ пауза',
+    '   Джойстик | ⛏ добыча | ⚔️ атака',
+    '   🍗 мясо | 🎒 инвентарь | 🛒 магазин | ☰ пауза',
     '',
-    '⚔️ Оружие: 6 видов (магазин → вкладка)',
-    '📦 Ресурсы: камень, дерево, золото, алмаз,',
-    '   железо, сталь, кристалл (по уровням)',
+    '⚔️ 6 видов оружия (магазин)',
+    '📦 Ресурсы: камень, дерево, золото, алмаз',
+    '🌍 Биомы: лес → пустыня → снега (4 ур.)',
+    '👹 Босс на каждом 5-м уровне',
+    '🐾 Питомцы, 🏆 Достижения, 🍽️ Голод',
     '',
-    '🏗️ Постройки (кнопка в паузе):',
-    '   Дом +10%💰 | Верстак — рецепты | Печь',
+    '⚔️ PvP Арена — бои с ботами',
+    '   Ранги: Новичок → Бронза → Серебро →',
+    '          Золото → Платина → Легенда',
     '',
-    '🔥 Комбо: 5 добыч → x2',
-    '🎪 Ярмарка: x2 цены (раз в 5 мин)',
-    '🎁 Клад: каждые 3 уровня',
-    '',
-    '🌍 ЭТАП 4 — Биомы меняются каждые 4 уровня:',
-    '   Лес → Пустыня → Снега',
-    '❄️ На снегу скользишь!',
-    '🕳️ Пещеры (нужен Фонарик)',
-    '👹 Босс на каждом 5-м уровне!'
+    '🌐 ЭТАП 7 — Мультиплеер:',
+    '   • Создай комнату — получи код',
+    '   • Друг вводит код и пароль',
+    '   • Играете вместе на одной карте',
+    '   ⚠️ Нужен интернет и Firebase'
   ] : [
     '🎮 Управление:',
     '   WASD/стрелки — движение | E — добыть',
     '   Q — атака | F — мясо | I — инвентарь',
-    '   B — постройки | M — магазин | Esc — пауза',
+    '   K — достижения | M — магазин | P — арена',
+    '   Esc — пауза',
     '',
-    '⚔️ Оружие: Кулаки, Дубина, Меч, Копьё, Топор, Лук',
-    '📦 Ресурсы: камень, дерево, золото, алмаз,',
-    '   железо, сталь, кристалл (открываются по уровням)',
+    '⚔️ 6 видов оружия: Кулаки → Дубина → Меч → Копьё → Топор → Лук',
+    '📦 Ресурсы: камень, дерево, золото, алмаз',
+    '🌍 Биомы: лес → пустыня → снега (каждые 4 ур.)',
+    '👹 Босс на каждом 5-м уровне',
+    '🐾 Питомцы: 🐕 Собака, 🦜 Попугай',
+    '🏆 Достижения — каждое даёт монеты',
+    '🍽️ Голод — ешь мясо, иначе медленнее',
     '',
-    '🏗️ Постройки (клавиша B):',
-    '   🏠 Дом +10%💰 | 🔨 Верстак | 🔥 Печь',
+    '⚔️ PvP Арена (P): бои с ботами, рейтинг и ранги',
     '',
-    '🔥 Комбо: 5 добыч подряд → x2',
-    '🎪 Ярмарка: раз в 5 мин цены x2',
-    '🎁 Клад: каждые 3 уровня сундук',
-    '',
-    '🌍 ЭТАП 4 — Биомы меняются каждые 4 уровня:',
-    '   Лес → Пустыня → Снега (со скольжением)',
-    '🕳️ Пещеры — бонусные ресурсы, нужен Фонарик',
-    '👹 Босс на каждом 5-м уровне — сражение!'
+    '🌐 ЭТАП 7 — Мультиплеер:',
+    '   • В главном меню — «🌐 Мультиплеер»',
+    '   • Создай комнату — получи код',
+    '   • Друг вводит код и пароль',
+    '   • Играете вместе на одной карте',
+    '   ⚠️ Нужен интернет и настроенный Firebase'
   ];
   for(let i=0;i<lines.length;i++){
-    ctx.fillText(lines[i], 40, 60 + i*19);
+    ctx.fillText(lines[i], 40, 48 + i*18);
   }
   const btnW=200, btnH=40;
-  drawButton(CANVAS_WIDTH/2 - btnW/2, CANVAS_HEIGHT - 50, btnW, btnH, '← Назад', '#888');
-  canvas.howtoButtons = [{ x:CANVAS_WIDTH/2 - btnW/2, y:CANVAS_HEIGHT - 50, w:btnW, h:btnH, action:'back' }];
+  drawButton(CANVAS_WIDTH/2 - btnW/2, CANVAS_HEIGHT - 45, btnW, btnH, '← Назад', '#888');
+  canvas.howtoButtons = [{ x:CANVAS_WIDTH/2 - btnW/2, y:CANVAS_HEIGHT - 45, w:btnW, h:btnH, action:'back' }];
 }
 function drawPauseMenu(){
   ctx.fillStyle='rgba(0,0,0,0.85)'; ctx.fillRect(0,0,CANVAS_WIDTH,CANVAS_HEIGHT);
   ctx.fillStyle='#fff'; ctx.font='bold 34px "Courier New"'; ctx.textAlign='center';
-  ctx.fillText('Пауза', CANVAS_WIDTH/2, 130);
-  const btnW=220, btnH=44, startY=180, gap=54;
+  ctx.fillText('Пауза', CANVAS_WIDTH/2, 150);
+  const btnW=220, btnH=42, startY=200, gap=50;
   drawButton(CANVAS_WIDTH/2 - btnW/2, startY, btnW, btnH, '▶ Продолжить', '#4caf50');
-  drawButton(CANVAS_WIDTH/2 - btnW/2, startY+gap, btnW, btnH, '🏗️ Постройки', '#8d6e63');
-  drawButton(CANVAS_WIDTH/2 - btnW/2, startY+gap*2, btnW, btnH, '🛒 Магазин', '#2196f3');
+  drawButton(CANVAS_WIDTH/2 - btnW/2, startY+gap, btnW, btnH, '🛒 Магазин', '#2196f3');
+  drawButton(CANVAS_WIDTH/2 - btnW/2, startY+gap*2, btnW, btnH, '🏆 Достижения', '#ffd700');
   drawButton(CANVAS_WIDTH/2 - btnW/2, startY+gap*3, btnW, btnH, '🏠 Главное меню', '#f44336');
   canvas.pauseButtons = [
     { x:CANVAS_WIDTH/2 - btnW/2, y:startY, w:btnW, h:btnH, action:'resume' },
-    { x:CANVAS_WIDTH/2 - btnW/2, y:startY+gap, w:btnW, h:btnH, action:'build' },
-    { x:CANVAS_WIDTH/2 - btnW/2, y:startY+gap*2, w:btnW, h:btnH, action:'shop' },
+    { x:CANVAS_WIDTH/2 - btnW/2, y:startY+gap, w:btnW, h:btnH, action:'shop' },
+    { x:CANVAS_WIDTH/2 - btnW/2, y:startY+gap*2, w:btnW, h:btnH, action:'achievements' },
     { x:CANVAS_WIDTH/2 - btnW/2, y:startY+gap*3, w:btnW, h:btnH, action:'menu' }
   ];
 }
@@ -1694,15 +2315,14 @@ function drawShopOverlay(){
   ctx.fillText('Магазин', CANVAS_WIDTH/2, 28);
   ctx.font='14px "Courier New"';
   ctx.fillText(`Баланс: ${balance}`, CANVAS_WIDTH/2, 48);
-
   const tabY = 62, tabW = 85, tabH = 24;
-  const tabs = ['Улучш.','Инстр.','Оружие','Скины','Крафт','Продажа'];
-  if(!canvas.shopTab) canvas.shopTab = 0;
+  const tabs = ['Улучш.','Инстр.','Оружие','Скины','Питомцы','Укр.','Крафт','Продажа'];
+  if(canvas.shopTab === undefined) canvas.shopTab = 0;
   canvas.shopTabButtons = [];
   const tabStartX = (CANVAS_WIDTH - tabs.length * (tabW + 5)) / 2;
   for(let i=0;i<tabs.length;i++){
     const tx = tabStartX + i * (tabW + 5);
-    drawButton(tx, tabY, tabW, tabH, tabs[i], i === canvas.shopTab ? '#4caf50' : '#555', true, 11);
+    drawButton(tx, tabY, tabW, tabH, tabs[i], i === canvas.shopTab ? '#4caf50' : '#555', true, 10);
     canvas.shopTabButtons.push({ x:tx, y:tabY, w:tabW, h:tabH, action:'tab', index:i });
   }
   const contentY = 96;
@@ -1711,9 +2331,10 @@ function drawShopOverlay(){
   else if(canvas.shopTab === 1) drawToolsTab(contentY);
   else if(canvas.shopTab === 2) drawWeaponsTab(contentY);
   else if(canvas.shopTab === 3) drawSkinsTab(contentY);
-  else if(canvas.shopTab === 4) drawCraftTab(contentY);
-  else if(canvas.shopTab === 5) drawSellTab(contentY);
-
+  else if(canvas.shopTab === 4) drawPetsTab(contentY);
+  else if(canvas.shopTab === 5) drawAccessoriesTab(contentY);
+  else if(canvas.shopTab === 6) drawCraftTab(contentY);
+  else if(canvas.shopTab === 7) drawSellTab(contentY);
   drawButton(CANVAS_WIDTH/2 - 100, CANVAS_HEIGHT - 42, 200, 36, '✖ ЗАКРЫТЬ (M/Esc)', '#f44336', true, 13);
   canvas.shopCloseButton = { x:CANVAS_WIDTH/2 - 100, y:CANVAS_HEIGHT - 42, w:200, h:36 };
 }
@@ -1737,14 +2358,11 @@ function drawUpgradesTab(yStart){
   ];
 }
 function drawToolsTab(yStart){
-  const lineH = 38;
+  const lineH = 42;
   const tools = [
-    { id:'stone',   name:'🪨 Кирка (камень)',          price:PRICE_TOOL_STONE,   level:1 },
-    { id:'gold',    name:'⛏ Золотая кирка (золото)',    price:PRICE_TOOL_GOLD,    level:1 },
-    { id:'diamond', name:'💎 Алмазный бур (алмаз)',     price:PRICE_TOOL_DIAMOND, level:3 },
-    { id:'iron',    name:'⚙️ Железная кирка (железо)',   price:PRICE_TOOL_IRON,    level:4 },
-    { id:'steel',   name:'🔩 Стальная кирка (сталь)',   price:PRICE_TOOL_STEEL,   level:7 },
-    { id:'crystal', name:'🔮 Кристальный бур (кристалл)',price:PRICE_TOOL_CRYSTAL, level:10 }
+    { id:'stone',   name:'🪨 Кирка (камень)',        price:PRICE_TOOL_STONE,   level:1 },
+    { id:'gold',    name:'⛏ Золотая кирка (золото)',  price:PRICE_TOOL_GOLD,    level:1 },
+    { id:'diamond', name:'💎 Алмазный бур (алмаз)',   price:PRICE_TOOL_DIAMOND, level:3 }
   ];
   let y = yStart;
   for(let t of tools){
@@ -1783,16 +2401,43 @@ function drawSkinsTab(yStart){
     y += lineH;
   }
 }
+function drawPetsTab(yStart){
+  const lineH = 50;
+  let y = yStart;
+  ctx.fillStyle='#fff'; ctx.font='13px "Courier New"'; ctx.textAlign='center';
+  ctx.fillText('🐾 Питомцы бегают за тобой и помогают', CANVAS_WIDTH/2, y);
+  y += 25;
+  for(let p of PETS){
+    const owned = ownedPets.includes(p.id);
+    const levelOk = currentLevel >= p.level;
+    const canBuy = !owned && levelOk && balance >= p.cost;
+    const text = owned ? (activePet===p.id ? '✅ Активен' : '✔ Надеть') : (levelOk ? `${p.cost}` : `Ур. ${p.level}`);
+    drawShopItem(y, `${p.name} — ${p.desc}`, text, 'buy_pet_'+p.id, canBuy || owned, activePet === p.id);
+    canvas.shopItems.push({ x:CANVAS_WIDTH/2 - 180, y, w:360, h:34, action:'buy_pet_'+p.id });
+    y += lineH;
+  }
+}
+function drawAccessoriesTab(yStart){
+  const lineH = 42;
+  let y = yStart;
+  for(let a of ACCESSORIES){
+    const owned = ownedAccessories.includes(a.id);
+    const levelOk = currentLevel >= a.level;
+    const canBuy = !owned && levelOk && balance >= a.cost;
+    const text = owned ? (equippedAccessory===a.id ? '✅ Надето' : '✔ Надеть') : (levelOk ? `${a.cost}` : `Ур. ${a.level}`);
+    drawShopItem(y, a.name, text, 'buy_acc_'+a.id, canBuy || owned, equippedAccessory === a.id);
+    canvas.shopItems.push({ x:CANVAS_WIDTH/2 - 180, y, w:360, h:34, action:'buy_acc_'+a.id });
+    y += lineH;
+  }
+}
 function drawCraftTab(yStart){
   const lineH = 38;
   let y = yStart;
-  const allRecipes = built.workbench ? CRAFT_RECIPES.concat(WORKBENCH_RECIPES) : CRAFT_RECIPES;
-  for(let i=0;i<allRecipes.length;i++){
-    const r = allRecipes[i];
+  for(let i=0;i<CRAFT_RECIPES.length;i++){
+    const r = CRAFT_RECIPES[i];
     const can = canCraft(r);
     const costStr = Object.entries(r.cost).map(([k,v])=>`${v}${(RESOURCE_TYPES[k]?.name||k).slice(0,3)}`).join(',');
-    const prefix = i >= CRAFT_RECIPES.length ? '🔨 ' : '';
-    drawShopItem(y, `${prefix}${r.name} — ${r.desc.slice(0,24)}`, costStr, 'craft_'+i, can);
+    drawShopItem(y, `${r.name} — ${r.desc.slice(0,24)}`, costStr, 'craft_'+i, can);
     canvas.shopItems.push({ x:CANVAS_WIDTH/2 - 180, y, w:360, h:34, action:'craft_'+i });
     y += lineH;
   }
@@ -1800,7 +2445,7 @@ function drawCraftTab(yStart){
 function drawSellTab(yStart){
   const lineH = 34;
   let y = yStart;
-  for(let key of ['stone','wood','gold','diamond','iron','steel','crystal','meat']){
+  for(let key of ['stone','wood','gold','diamond','meat']){
     const amount = inventory[key];
     const name = RESOURCE_TYPES[key]?.name || (key==='meat'?'Мясо':'?');
     const price = getSellPrice(key);
@@ -1828,13 +2473,13 @@ function renderPlaying(){
   drawWolves();
   drawBosses();
   drawTreasure();
+  drawPet();
   drawPlayer();
   drawSlash();
   drawProjectiles();
   drawParticles();
   drawFlyingTexts();
   drawHUD();
-
   if(playerHurtTimer > 0){
     ctx.fillStyle = `rgba(255,0,0,${playerHurtTimer*0.5})`;
     ctx.fillRect(0,0,CANVAS_WIDTH,CANVAS_HEIGHT);
@@ -1871,12 +2516,34 @@ function handleKeyDown(e){
     if(e.code === 'KeyI' || e.code === 'Escape'){ e.preventDefault(); closeInventory(); }
     return;
   }
-  if(gameState === STATE_BUILD){
-    if(e.code === 'KeyB' || e.code === 'Escape'){ e.preventDefault(); closeBuild(); }
+  if(gameState === STATE_ACHIEVEMENTS){
+    if(e.code === 'KeyK' || e.code === 'Escape'){ e.preventDefault(); closeAchievements(); }
     return;
   }
   if(gameState === STATE_SHOP){
     if(e.code === 'KeyM' || e.code === 'Escape'){ e.preventDefault(); closeShop(); }
+    return;
+  }
+  if(gameState === STATE_PVP_ARENA){
+    if(e.code === 'Escape'){ e.preventDefault(); exitPvpArena(); }
+    else if(e.code === 'KeyQ' || e.code === 'Space'){ e.preventDefault(); pvpPlayerAttack(); }
+    else keys[e.code] = true;
+    return;
+  }
+  if(gameState === STATE_PVP_MENU || gameState === STATE_PVP_RESULT){
+    if(e.code === 'Escape'){ e.preventDefault(); gameState = STATE_MENU; }
+    return;
+  }
+  if(gameState === STATE_MP_MENU || gameState === STATE_MP_LOBBY){
+    if(e.code === 'Escape'){ e.preventDefault(); if(gameState === STATE_MP_LOBBY) leaveMultiplayer(); else gameState = STATE_MENU; }
+    return;
+  }
+  if(gameState === STATE_MP_GAME){
+    if(e.code === 'Escape'){ e.preventDefault(); leaveMultiplayer(); }
+    keys[e.code]=true;
+    if((e.code==='KeyE'||e.code==='Space')) triggerAction();
+    if(e.code==='KeyQ') playerAttack();
+    if(e.code==='KeyF') eatMeat();
     return;
   }
   if(gameState===STATE_HOWTO){
@@ -1893,25 +2560,20 @@ function handleKeyDown(e){
   if(e.code==='KeyQ' && gameState===STATE_PLAYING) playerAttack();
   if(e.code==='KeyF' && gameState===STATE_PLAYING) eatMeat();
   if(e.code==='KeyI' && gameState===STATE_PLAYING) openInventory();
-  if(e.code==='KeyB' && gameState===STATE_PLAYING) openBuild();
+  if(e.code==='KeyK' && gameState===STATE_PLAYING) openAchievements();
   if(e.code==='KeyM' && gameState===STATE_PLAYING) openShop();
+  if(e.code==='KeyP' && gameState===STATE_PLAYING) openPvpMenu();
   if(e.code==='Escape' && gameState===STATE_PLAYING) pauseGame();
 }
 function handleKeyUp(e){ keys[e.code]=false; }
 
-// ===== ГЛАВНАЯ ФУНКЦИЯ КЛИКОВ =====
 function handleClick(e){
   const {x,y} = getCanvasCoords(e);
 
-  // ===== 1. Кнопки ЗАКРЫТЬ — высший приоритет =====
   if(gameState===STATE_HOWTO){
     if(canvas.howtoButtons){
       for(let b of canvas.howtoButtons){
-        if(x>=b.x && x<=b.x+b.w && y>=b.y && y<=b.y+b.h){
-          gameState = STATE_MENU;
-          canvas.howtoButtons = null;
-          return;
-        }
+        if(x>=b.x && x<=b.x+b.w && y>=b.y && y<=b.y+b.h){ gameState = STATE_MENU; canvas.howtoButtons = null; return; }
       }
     }
     return;
@@ -1924,42 +2586,109 @@ function handleClick(e){
     const b = canvas.inventoryCloseButton;
     if(x>=b.x && x<=b.x+b.w && y>=b.y && y<=b.y+b.h){ closeInventory(); return; }
   }
-  if(gameState===STATE_BUILD && canvas.buildCloseButton){
-    const b = canvas.buildCloseButton;
-    if(x>=b.x && x<=b.x+b.w && y>=b.y && y<=b.y+b.h){ closeBuild(); return; }
+  if(gameState===STATE_ACHIEVEMENTS && canvas.achievementsCloseButton){
+    const b = canvas.achievementsCloseButton;
+    if(x>=b.x && x<=b.x+b.w && y>=b.y && y<=b.y+b.h){ closeAchievements(); return; }
+  }
+  if(gameState===STATE_PVP_MENU){
+    if(canvas.pvpBackButton){
+      const b = canvas.pvpBackButton;
+      if(x>=b.x && x<=b.x+b.w && y>=b.y && y<=b.y+b.h){ gameState = STATE_MENU; return; }
+    }
+    if(canvas.pvpButtons){
+      for(let b of canvas.pvpButtons){
+        if(x>=b.x && x<=b.x+b.w && y>=b.y && y<=b.y+b.h){ startPvpBattle(b.oppId); return; }
+      }
+    }
+    return;
+  }
+  if(gameState===STATE_PVP_RESULT){
+    if(canvas.pvpResultButtons){
+      for(let b of canvas.pvpResultButtons){
+        if(x>=b.x && x<=b.x+b.w && y>=b.y && y<=b.y+b.h){
+          if(b.action==='again'){
+            if(pvpResult && pvpResult.opp) startPvpBattle(pvpResult.opp.id);
+            else openPvpMenu();
+          }
+          else if(b.action==='back') openPvpMenu();
+          return;
+        }
+      }
+    }
+    return;
+  }
+  // МУЛЬТИПЛЕЕР МЕНЮ
+  if(gameState===STATE_MP_MENU){
+    if(canvas.mpMenuButtons){
+      for(let b of canvas.mpMenuButtons){
+        if(x>=b.x && x<=b.x+b.w && y>=b.y && y<=b.y+b.h){
+          if(b.action==='back'){ gameState = STATE_MENU; return; }
+          if(b.action==='create'){ canvas.mpInputMode = 'create_nickname'; canvas.mpInputValue = ''; return; }
+          if(b.action==='join'){ canvas.mpInputMode = 'join_roomid'; canvas.mpInputValue = ''; return; }
+        }
+      }
+    }
+    return;
+  }
+  // ЛОББИ
+  if(gameState===STATE_MP_LOBBY){
+    if(canvas.mpChatBox){
+      const b = canvas.mpChatBox;
+      if(x>=b.x && x<=b.x+b.w && y>=b.y && y<=b.y+b.h){
+        canvas.mpChatActive = true;
+        return;
+      }
+    }
+    if(canvas.mpLobbyButtons){
+      for(let b of canvas.mpLobbyButtons){
+        if(x>=b.x && x<=b.x+b.w && y>=b.y && y<=b.y+b.h){
+          if(b.action==='start'){
+            if(mp.isHost) startMultiplayerGame();
+          } else if(b.action==='leave') leaveMultiplayer();
+          return;
+        }
+      }
+    }
+    return;
+  }
+  if(gameState===STATE_MP_GAME){
+    if(canvas.mpLeaveButton){
+      const b = canvas.mpLeaveButton;
+      if(x>=b.x && x<=b.x+b.w && y>=b.y && y<=b.y+b.h){ leaveMultiplayer(); return; }
+    }
+    return;
   }
 
-  // ===== 2. Кнопка ☰ (пауза) на ПК =====
   if(gameState===STATE_PLAYING && canvas.menuButtonRect){
     const b = canvas.menuButtonRect;
     if(x>=b.x && x<=b.x+b.w && y>=b.y && y<=b.y+b.h){ pauseGame(); return; }
   }
 
-  // ===== 3. Главное меню =====
   if(gameState===STATE_MENU && canvas.menuButtons){
     for(let b of canvas.menuButtons){
       if(x>=b.x && x<=b.x+b.w && y>=b.y && y<=b.y+b.h){
         if(b.action==='play') startGame();
+        else if(b.action==='multiplayer') openMpMenu();
+        else if(b.action==='pvp') openPvpMenu();
         else if(b.action==='shop' && b.active) openShop();
         else if(b.action==='howto') gameState = STATE_HOWTO;
+        else if(b.action==='music') toggleMusic();
         else if(b.action==='reset') resetProgress();
         return;
       }
     }
   }
-  // ===== 4. Пауза =====
   else if(gameState===STATE_PAUSED && canvas.pauseButtons){
     for(let b of canvas.pauseButtons){
       if(x>=b.x && x<=b.x+b.w && y>=b.y && y<=b.y+b.h){
         if(b.action==='resume') resumeGame();
-        else if(b.action==='build') openBuild();
         else if(b.action==='shop') openShop();
+        else if(b.action==='achievements') openAchievements();
         else if(b.action==='menu') goToMainMenu();
         return;
       }
     }
   }
-  // ===== 5. Магазин =====
   else if(gameState===STATE_SHOP){
     if(canvas.shopTabButtons){
       for(let b of canvas.shopTabButtons){
@@ -1970,18 +2699,6 @@ function handleClick(e){
       for(let item of canvas.shopItems){
         if(x>=item.x && x<=item.x+item.w && y>=item.y && y<=item.y+item.h){
           handleShopAction(item.action); return;
-        }
-      }
-    }
-  }
-  // ===== 6. Постройки =====
-  else if(gameState===STATE_BUILD){
-    if(canvas.buildItems){
-      for(let item of canvas.buildItems){
-        if(x>=item.x && x<=item.x+item.w && y>=item.y && y<=item.y+item.h){
-          if(item.action.startsWith('build_')) build(item.action.substring(6));
-          else if(item.action === 'furnace_smelt') furnaceSmelt();
-          return;
         }
       }
     }
@@ -1999,10 +2716,11 @@ function handleShopAction(action){
   else if(action.startsWith('buy_tool_')) buyTool(action.substring(9));
   else if(action.startsWith('buy_weapon_')) buyWeapon(action.substring(11));
   else if(action.startsWith('buy_skin_')) buySkin(action.substring(9));
+  else if(action.startsWith('buy_pet_')) buyPet(action.substring(8));
+  else if(action.startsWith('buy_acc_')) buyAccessory(action.substring(8));
   else if(action.startsWith('craft_')){
     const i = parseInt(action.split('_')[1]);
-    const allRecipes = built.workbench ? CRAFT_RECIPES.concat(WORKBENCH_RECIPES) : CRAFT_RECIPES;
-    if(i>=0 && i<allRecipes.length && canCraft(allRecipes[i])) craft(allRecipes[i]);
+    if(i>=0 && i<CRAFT_RECIPES.length && canCraft(CRAFT_RECIPES[i])) craft(CRAFT_RECIPES[i]);
   } else if(action.startsWith('sell_')) sellResource(action.substring(5));
   else if(action==='fair_start'){
     if(!fairActive && fairCooldown <= 0){
@@ -2020,8 +2738,8 @@ function buyUpgrade(type){
   else if(type==='bonus' && !upgrades.bonus && balance>=PRICE_BONUS){ balance-=PRICE_BONUS; upgrades.bonus=true; saveGame(); }
 }
 function buyTool(tool){
-  const prices = { stone:PRICE_TOOL_STONE, gold:PRICE_TOOL_GOLD, diamond:PRICE_TOOL_DIAMOND, iron:PRICE_TOOL_IRON, steel:PRICE_TOOL_STEEL, crystal:PRICE_TOOL_CRYSTAL };
-  const levels = { stone:1, gold:1, diamond:3, iron:4, steel:7, crystal:10 };
+  const prices = { stone:PRICE_TOOL_STONE, gold:PRICE_TOOL_GOLD, diamond:PRICE_TOOL_DIAMOND };
+  const levels = { stone:1, gold:1, diamond:3 };
   if(!upgrades.tools[tool] && balance >= prices[tool] && currentLevel >= levels[tool]){
     balance -= prices[tool];
     upgrades.tools[tool] = true;
@@ -2049,23 +2767,75 @@ function buySkin(id){
     saveGame();
   }
 }
+function buyPet(id){
+  const p = PETS.find(x=>x.id===id);
+  if(!p) return;
+  if(ownedPets.includes(id)){ activePet = id; petTimer = 1; saveGame(); return; }
+  if(balance >= p.cost && currentLevel >= p.level){
+    balance -= p.cost;
+    ownedPets.push(id);
+    activePet = id;
+    petTimer = 1;
+    saveGame();
+  }
+}
+function buyAccessory(id){
+  const a = ACCESSORIES.find(x=>x.id===id);
+  if(!a) return;
+  if(ownedAccessories.includes(id)){
+    equippedAccessory = (equippedAccessory === id) ? null : id;
+    saveGame();
+    return;
+  }
+  if(balance >= a.cost && currentLevel >= a.level){
+    balance -= a.cost;
+    ownedAccessories.push(id);
+    equippedAccessory = id;
+    saveGame();
+  }
+}
 function sellResource(type){
   if(inventory[type] > 0){
     const total = inventory[type] * getSellPrice(type);
     balance += total;
+    updateDailyQuest('sell', total);
     inventory[type] = 0;
     saveGame();
     checkLevelUp();
   }
 }
 
+// ===================== МУЗЫКА =====================
+const melodyNotes = [262, 294, 330, 349, 392, 440, 494, 523];
+let musicNoteIndex = 0;
+function startMusic(){
+  if(!audioCtx) return;
+  if(musicInterval) clearInterval(musicInterval);
+  musicNoteIndex = 0;
+  musicInterval = setInterval(() => {
+    if(!musicEnabled || !audioCtx) return;
+    if(gameState === STATE_MENU || gameState === STATE_PLAYING || gameState === STATE_PVP_MENU) {
+      const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.type = 'square';
+      o.frequency.value = melodyNotes[musicNoteIndex % melodyNotes.length];
+      g.gain.setValueAtTime(0.02, audioCtx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+      o.connect(g); g.connect(audioCtx.destination);
+      o.start(); o.stop(audioCtx.currentTime + 0.3);
+      musicNoteIndex++;
+    }
+  }, 500);
+}
+function stopMusic(){ if(musicInterval){ clearInterval(musicInterval); musicInterval = null; } }
+function toggleMusic(){ musicEnabled = !musicEnabled; if(musicEnabled) startMusic(); else stopMusic(); saveGame(); }
+
 // ===================== СОСТОЯНИЯ =====================
 function startGame(){
   currentLevel = 1;
   targetMoney = getTargetForLevel(1);
   balance = 0;
-  playerMaxHealth = crystalAmuletActive ? 130 : MAX_HEALTH;
-  playerHealth = playerMaxHealth;
+  playerHealth = MAX_HEALTH;
+  playerHunger = MAX_HUNGER;
   generateMap(1);
   generateResources(1);
   generateAnimals(1);
@@ -2082,17 +2852,14 @@ function startGame(){
   gameWasStarted = true;
   loadGame();
   generateTreasure(currentLevel);
+  generateDailyQuest();
   if(isMobile) showMobileControls(true);
   else showMobileControls(false);
+  if(!audioCtx){ try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){} }
+  if(musicEnabled) startMusic();
 }
-function pauseGame(){
-  gameState = STATE_PAUSED;
-  if(isMobile) showMobileControls(false);
-}
-function resumeGame(){
-  gameState = STATE_PLAYING;
-  if(isMobile) showMobileControls(true);
-}
+function pauseGame(){ gameState = STATE_PAUSED; if(isMobile) showMobileControls(false); }
+function resumeGame(){ gameState = STATE_PLAYING; if(isMobile) showMobileControls(true); }
 function openShop(){
   if(!gameWasStarted && gameState===STATE_MENU) return;
   canvas.preShopState = gameState;
@@ -2100,29 +2867,25 @@ function openShop(){
   canvas.shopTab = 0;
   if(isMobile) showMobileControls(false);
 }
-function closeShop(){
-  gameState = STATE_PLAYING;
-  if(isMobile) showMobileControls(true);
-}
-function goToMainMenu(){
-  gameState = STATE_MENU;
-  activeMining = null;
-  saveGame();
-  if(isMobile) showMobileControls(false);
-}
+function closeShop(){ gameState = STATE_PLAYING; if(isMobile) showMobileControls(true); }
+function goToMainMenu(){ gameState = STATE_MENU; activeMining = null; saveGame(); if(isMobile) showMobileControls(false); }
 function resetProgress(){
   if(confirm('Сбросить весь прогресс?')){
     localStorage.removeItem('minersQuest_save');
-    inventory = {stone:0,wood:0,gold:0,diamond:0,iron:0,steel:0,crystal:0,meat:0};
+    localStorage.removeItem('minersQuest_daily');
+    inventory = {stone:0,wood:0,gold:0,diamond:0,meat:0};
     balance = 0;
-    upgrades = {speed:0,mining:0,bonus:false,tools:{stone:false,gold:false,diamond:false,iron:false,steel:false,crystal:false}};
+    upgrades = {speed:0,mining:0,bonus:false,tools:{stone:false,gold:false,diamond:false}};
     ownedSkins=['default']; equippedSkin='default';
+    ownedAccessories=[]; equippedAccessory=null;
     ownedWeapons=['fists']; equippedWeapon='fists';
-    built = {house:false, workbench:false, furnace:false};
+    ownedPets=[]; activePet=null;
+    unlockedAchievements=[];
+    stats = {mined:0,chickens:0,wolves:0,bosses:0,deaths:0,meatEaten:0};
+    dailyQuest = null;
+    pvp = {wins:0,losses:0,rating:0,winStreak:0,bestStreak:0,lastOpponent:null,battles:[]};
     gameWasStarted=false; currentLevel=1; targetMoney=getTargetForLevel(1);
     miningBoostActive=false; goldPickaxeActive=false;
-    ironShieldActive=false; steelSwordActive=false; crystalAmuletActive=false;
-    fastMiningActive=false; compassActive=false; luckyCharmActive=false; flashlightActive=false;
     playerMaxHealth = MAX_HEALTH;
   }
 }
@@ -2130,9 +2893,10 @@ function saveGame(){
   try {
     localStorage.setItem('minersQuest_save', JSON.stringify({
       balance, upgrades, inventory, currentLevel, targetMoney, gameWasStarted,
-      ownedSkins, equippedSkin, ownedWeapons, equippedWeapon,
-      miningBoostActive, goldPickaxeActive, ironShieldActive, steelSwordActive, crystalAmuletActive,
-      fastMiningActive, compassActive, luckyCharmActive, flashlightActive, built
+      ownedSkins, equippedSkin, ownedAccessories, equippedAccessory,
+      ownedWeapons, equippedWeapon, ownedPets, activePet,
+      miningBoostActive, goldPickaxeActive,
+      unlockedAchievements, stats, musicEnabled, pvp, mpStats: mp.stats
     }));
   } catch(e){}
 }
@@ -2142,27 +2906,27 @@ function loadGame(){
     try {
       const d = JSON.parse(s);
       balance = d.balance || 0;
-      upgrades = d.upgrades || {speed:0,mining:0,bonus:false,tools:{stone:false,gold:false,diamond:false,iron:false,steel:false,crystal:false}};
-      if(!upgrades.tools) upgrades.tools = {stone:false,gold:false,diamond:false,iron:false,steel:false,crystal:false};
-      inventory = d.inventory || {stone:0,wood:0,gold:0,diamond:0,iron:0,steel:0,crystal:0,meat:0};
+      upgrades = d.upgrades || {speed:0,mining:0,bonus:false,tools:{stone:false,gold:false,diamond:false}};
+      if(!upgrades.tools) upgrades.tools = {stone:false,gold:false,diamond:false};
+      inventory = d.inventory || {stone:0,wood:0,gold:0,diamond:0,meat:0};
       currentLevel = d.currentLevel || 1;
       targetMoney = getTargetForLevel(currentLevel);
       gameWasStarted = d.gameWasStarted || false;
       ownedSkins = d.ownedSkins || ['default'];
       equippedSkin = d.equippedSkin || 'default';
+      ownedAccessories = d.ownedAccessories || [];
+      equippedAccessory = d.equippedAccessory || null;
       ownedWeapons = d.ownedWeapons || ['fists'];
       equippedWeapon = d.equippedWeapon || 'fists';
+      ownedPets = d.ownedPets || [];
+      activePet = d.activePet || null;
       miningBoostActive = d.miningBoostActive || false;
       goldPickaxeActive = d.goldPickaxeActive || false;
-      ironShieldActive = d.ironShieldActive || false;
-      steelSwordActive = d.steelSwordActive || false;
-      crystalAmuletActive = d.crystalAmuletActive || false;
-      fastMiningActive = d.fastMiningActive || false;
-      compassActive = d.compassActive || false;
-      luckyCharmActive = d.luckyCharmActive || false;
-      flashlightActive = d.flashlightActive || false;
-      built = d.built || {house:false, workbench:false, furnace:false};
-      playerMaxHealth = crystalAmuletActive ? 130 : MAX_HEALTH;
+      unlockedAchievements = d.unlockedAchievements || [];
+      stats = d.stats || {mined:0,chickens:0,wolves:0,bosses:0,deaths:0,meatEaten:0};
+      musicEnabled = d.musicEnabled !== undefined ? d.musicEnabled : true;
+      pvp = d.pvp || {wins:0,losses:0,rating:0,winStreak:0,bestStreak:0,lastOpponent:null,battles:[]};
+      if(d.mpStats) mp.stats = d.mpStats;
     } catch(e){}
   }
 }
@@ -2178,9 +2942,6 @@ function playCollectSound(type){
   else if(type==='gold') f=800;
   else if(type==='diamond') f=1000;
   else if(type==='meat') f=400;
-  else if(type==='iron') f=550;
-  else if(type==='steel') f=700;
-  else if(type==='crystal') f=1100;
   o.frequency.setValueAtTime(f, now);
   o.frequency.exponentialRampToValueAtTime(f*1.5, now+0.1);
   g.gain.setValueAtTime(0.3, now);
@@ -2256,27 +3017,23 @@ let lastTime = performance.now();
 function gameLoop(ts){
   const dt = Math.min(0.1, (ts - lastTime) / 1000);
   lastTime = ts;
-  if(gameState===STATE_PLAYING) updatePlaying(dt);
+  if(gameState===STATE_PLAYING || gameState===STATE_MP_GAME) updatePlaying(dt);
+  else if(gameState===STATE_PVP_ARENA) updatePvpArena(dt);
   ctx.fillStyle='#2d2d2d';
   ctx.fillRect(0,0,CANVAS_WIDTH,CANVAS_HEIGHT);
-  if(gameState===STATE_MENU){
-    drawMenu();
-  } else if(gameState===STATE_HOWTO){
-    drawHowToPlay();
-  } else if(gameState===STATE_PLAYING){
-    renderPlaying();
-  } else if(gameState===STATE_PAUSED){
-    renderPlaying(); drawPauseMenu();
-  } else if(gameState===STATE_SHOP){
-    if(canvas.preShopState===STATE_PLAYING) renderPlaying();
-    drawShopOverlay();
-  } else if(gameState===STATE_INVENTORY){
-    renderPlaying();
-    drawInventory();
-  } else if(gameState===STATE_BUILD){
-    renderPlaying();
-    drawBuildMenu();
-  }
+  if(gameState===STATE_MENU) drawMenu();
+  else if(gameState===STATE_HOWTO) drawHowToPlay();
+  else if(gameState===STATE_PLAYING) renderPlaying();
+  else if(gameState===STATE_PAUSED){ renderPlaying(); drawPauseMenu(); }
+  else if(gameState===STATE_SHOP){ if(canvas.preShopState===STATE_PLAYING) renderPlaying(); drawShopOverlay(); }
+  else if(gameState===STATE_INVENTORY){ renderPlaying(); drawInventory(); }
+  else if(gameState===STATE_ACHIEVEMENTS){ renderPlaying(); drawAchievements(); }
+  else if(gameState===STATE_PVP_MENU) drawPvpMenu();
+  else if(gameState===STATE_PVP_ARENA) drawPvpArena();
+  else if(gameState===STATE_PVP_RESULT) drawPvpResult();
+  else if(gameState===STATE_MP_MENU) drawMpMenu();
+  else if(gameState===STATE_MP_LOBBY) drawMpLobby();
+  else if(gameState===STATE_MP_GAME) drawMpGame();
   requestAnimationFrame(gameLoop);
 }
 
@@ -2290,8 +3047,6 @@ function resizeCanvas(){
   canvas.style.width = w + 'px';
   canvas.style.height = h + 'px';
 }
-
-// Обработка клика/тапа — избегаем двойного срабатывания
 let lastClickTime = 0;
 function handleClickWrapper(e){
   const now = performance.now();
@@ -2299,12 +3054,10 @@ function handleClickWrapper(e){
   lastClickTime = now;
   handleClick(e);
 }
-
 canvas.addEventListener('click', handleClickWrapper);
 canvas.addEventListener('touchstart', e => {
   if(e.target === canvas){ e.preventDefault(); handleClickWrapper(e); }
 }, {passive:false});
-
 window.addEventListener('keydown', handleKeyDown);
 window.addEventListener('keyup', handleKeyUp);
 window.addEventListener('resize', () => { resizeCanvas(); if(isMobile) positionMobileControls(); });
@@ -2313,6 +3066,7 @@ document.addEventListener('gesturestart', e => e.preventDefault());
 document.addEventListener('dblclick', e => e.preventDefault());
 
 loadGame();
+generateDailyQuest();
 resizeCanvas();
 showMobileControls(false);
 if(isMobile) positionMobileControls();
