@@ -18,7 +18,6 @@ html, body {
   touch-action: none;
 }
 
-/* ============ КОНТЕЙНЕР ============ */
 #gameContainer {
   position: relative;
   width: 100vw;
@@ -38,7 +37,6 @@ canvas {
   touch-action: none;
 }
 
-/* ============ ДЖОЙСТИК ============ */
 #joystick {
   position: fixed;
   display: none;
@@ -65,7 +63,6 @@ canvas {
   pointer-events: none;
 }
 
-/* ============ МОБИЛЬНЫЕ КНОПКИ ============ */
 .mobileBtn {
   position: fixed;
   display: none;
@@ -90,7 +87,6 @@ canvas {
   transform: scale(0.92);
 }
 
-/* Индивидуальные цвета кнопок */
 #btnAction { background: rgba(255, 152, 0, 0.85); }
 #btnAttack { background: rgba(244, 67, 54, 0.85); }
 #btnEat    { background: rgba(76, 175, 80, 0.85); }
