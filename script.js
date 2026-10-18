@@ -1,6 +1,6 @@
 "use strict";
 
-// ===================== МОБИЛЬНЫЙ =====================
+// ===================== ОПРЕДЕЛЕНИЕ МОБИЛЬНОГО =====================
 const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
                  || (navigator.maxTouchPoints > 1 && /Mobi|Tablet/i.test(navigator.userAgent));
 
@@ -81,8 +81,9 @@ const ACHIEVEMENTS = [
   { id:'chef',        name:'Шеф-повар',           desc:'Съешь 10 мяса',        reward:100, check: () => stats.meatEaten >= 10 },
   { id:'pvp_1',       name:'Дуэлянт',             desc:'Выиграй первый PvP',   reward:100, check: () => pvp.wins >= 1 },
   { id:'pvp_5',       name:'Гладиатор',           desc:'Выиграй 5 PvP',        reward:300, check: () => pvp.wins >= 5 },
-  { id:'mp_1',        name:'В сети',              desc:'Сыграй с другом',      reward:200, check: () => mp.stats.games >= 1 },
-  { id:'mp_5',        name:'Тиммейт',             desc:'Сыграй 5 игр с другом',reward:500, check: () => mp.stats.games >= 5 }
+  { id:'pvp_10',      name:'Чемпион',             desc:'Выиграй 10 PvP',       reward:700, check: () => pvp.wins >= 10 },
+  { id:'rank_gold',   name:'Золото',              desc:'Достигни ранга Золото', reward:500, check: () => pvp.rating >= 1500 },
+  { id:'rank_legend', name:'Легенда',             desc:'Достигни ранга Легенда', reward:2000, check: () => pvp.rating >= 2500 }
 ];
 
 const PRICE_SPEED = 50, PRICE_MINING = 80, PRICE_BONUS = 100;
@@ -113,7 +114,7 @@ const COMBO_TIMEOUT = 6.0;
 const FAIR_DURATION = 60;
 const FAIR_COOLDOWN = 300;
 
-// ===================== PVP =====================
+// ===================== PVP КОНСТАНТЫ =====================
 const PVP_OPPONENTS = [
   { id:'novice',  name:'🟢 Новичок',   level:1, hp:60,  damage:8,  speed:80,  icon:'👤', reward:50,  ratingWin:15, ratingLoss:5,  difficulty:'Лёгкий' },
   { id:'warrior', name:'🟡 Воин',      level:2, hp:100, damage:15, speed:100, icon:'⚔️', reward:120, ratingWin:25, ratingLoss:10, difficulty:'Средний' },
@@ -137,7 +138,7 @@ const ctx = canvas.getContext('2d', { alpha: false });
 canvas.width = CANVAS_WIDTH;
 canvas.height = CANVAS_HEIGHT;
 
-const STATE_MENU='menu', STATE_PLAYING='playing', STATE_PAUSED='paused', STATE_SHOP='shop', STATE_HOWTO='howto', STATE_INVENTORY='inventory', STATE_ACHIEVEMENTS='achievements', STATE_PVP_MENU='pvp_menu', STATE_PVP_ARENA='pvp_arena', STATE_PVP_RESULT='pvp_result', STATE_MP_MENU='mp_menu', STATE_MP_LOBBY='mp_lobby', STATE_MP_GAME='mp_game';
+const STATE_MENU='menu', STATE_PLAYING='playing', STATE_PAUSED='paused', STATE_SHOP='shop', STATE_HOWTO='howto', STATE_INVENTORY='inventory', STATE_ACHIEVEMENTS='achievements', STATE_PVP_MENU='pvp_menu', STATE_PVP_ARENA='pvp_arena', STATE_PVP_RESULT='pvp_result';
 let gameState = STATE_MENU;
 
 const keys = {};
@@ -174,19 +175,6 @@ let dailyQuest = null;
 let pvp = { wins: 0, losses: 0, rating: 0, winStreak: 0, bestStreak: 0, lastOpponent: null, battles: [] };
 let pvpPlayer = null, pvpOpponent = null, pvpResult = null;
 
-// Мультиплеер
-let mp = {
-  peer: null,
-  roomId: null,
-  isHost: false,
-  nickname: '',
-  remotePlayer: null,
-  connected: false,
-  chatMessages: [],
-  chatInput: '',
-  stats: { games: 0 }
-};
-
 let gameWasStarted = false, currentLevel = 1, targetMoney = getTargetForLevel(1);
 let speedBoostTimer = 0, miningBoostActive = false, goldPickaxeActive = false;
 
@@ -204,7 +192,7 @@ let audioCtx = null, soundEnabled = true, musicEnabled = true;
 let musicInterval = null;
 let animTime = 0;
 
-// ===================== МОБИЛЬНОЕ =====================
+// ===================== МОБИЛЬНОЕ УПРАВЛЕНИЕ =====================
 let joystickActive = false, joystickDX = 0, joystickDY = 0;
 let joystickStartX = 0, joystickStartY = 0;
 const JOYSTICK_KNOB_MAX = 40;
@@ -293,7 +281,7 @@ if(isMobile){
   btnEat.addEventListener('touchstart', e => { e.preventDefault(); if(gameState===STATE_PLAYING) eatMeat(); }, {passive:false});
   btnShop.addEventListener('touchstart', e => { e.preventDefault(); if(gameState===STATE_PLAYING||gameState===STATE_PAUSED) openShop(); }, {passive:false});
   btnInv.addEventListener('touchstart', e => { e.preventDefault(); if(gameState===STATE_PLAYING) openInventory(); }, {passive:false});
-  btnMenu.addEventListener('touchstart', e => { e.preventDefault(); if(gameState===STATE_PLAYING) pauseGame(); else if(gameState===STATE_PAUSED) goToMainMenu(); else if(gameState===STATE_PVP_ARENA) exitPvpArena(); else if(gameState===STATE_MP_GAME) leaveMultiplayer(); }, {passive:false});
+  btnMenu.addEventListener('touchstart', e => { e.preventDefault(); if(gameState===STATE_PLAYING) pauseGame(); else if(gameState===STATE_PAUSED) goToMainMenu(); else if(gameState===STATE_PVP_ARENA) exitPvpArena(); }, {passive:false});
 }
 
 // ===================== УТИЛИТЫ =====================
@@ -359,7 +347,7 @@ function checkAchievements(){
   }
 }
 
-// ===================== ЕЖЕДНЕВНОЕ =====================
+// ===================== ЕЖЕДНЕВНОЕ ЗАДАНИЕ =====================
 function generateDailyQuest(){
   const today = new Date().toDateString();
   const saved = localStorage.getItem('minersQuest_daily');
@@ -874,382 +862,6 @@ function onPlayerDeath(){
   saveGame();
 }
 
-// ===================== МУЛЬТИПЛЕЕР =====================
-let mpDatabase = null;
-let mpRoomRef = null;
-let mpPlayerRef = null;
-let mpSyncInterval = null;
-let mpChatRef = null;
-
-function initFirebase(){
-  if(!window.FIREBASE_CONFIG || !window.FIREBASE_CONFIG.databaseURL) {
-    return false;
-  }
-  try {
-    if(!firebase.apps.length){
-      firebase.initializeApp(window.FIREBASE_CONFIG);
-    }
-    mpDatabase = firebase.database();
-    return true;
-  } catch(e) {
-    console.error('Firebase init error:', e);
-    return false;
-  }
-}
-
-function openMpMenu(){
-  if(!initFirebase()){
-    alert('Firebase не настроен!\n\nОткрой index.html и вставь свой databaseURL из Firebase.');
-    return;
-  }
-  gameState = STATE_MP_MENU;
-  if(isMobile) showMobileControls(false);
-}
-
-function createRoom(nickname, roomName, password){
-  if(!mpDatabase) return;
-  const roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
-  mp.roomId = roomId;
-  mp.isHost = true;
-  mp.nickname = nickname;
-  mp.roomName = roomName;
-  mp.password = password;
-  mp.connected = true;
-  mp.chatMessages = [];
-  const roomRef = mpDatabase.ref('rooms/' + roomId);
-  roomRef.set({
-    name: roomName,
-    password: password,
-    host: nickname,
-    createdAt: Date.now(),
-    status: 'lobby',
-    players: {
-      [nickname]: { joined: Date.now(), ready: true }
-    }
-  });
-  mpRoomRef = roomRef;
-  mpPlayerRef = roomRef.child('players').child(nickname);
-  // Слушаем чат
-  mpChatRef = roomRef.child('chat');
-  mpChatRef.on('child_added', snap => {
-    const msg = snap.val();
-    if(msg) mp.chatMessages.push(msg);
-    if(mp.chatMessages.length > 20) mp.chatMessages.shift();
-  });
-  // Слушаем изменения в комнате
-  roomRef.on('value', snap => {
-    const data = snap.val();
-    if(!data){ leaveMultiplayer(); return; }
-    if(data.status === 'playing' && gameState === STATE_MP_LOBBY){
-      startMultiplayerGame();
-    }
-  });
-  gameState = STATE_MP_LOBBY;
-  if(isMobile) showMobileControls(false);
-}
-
-function joinRoom(roomId, nickname, password){
-  if(!mpDatabase) return false;
-  const roomRef = mpDatabase.ref('rooms/' + roomId);
-  return roomRef.once('value').then(snap => {
-    const data = snap.val();
-    if(!data) { alert('Комната не найдена'); return false; }
-    if(data.password !== password) { alert('Неверный пароль'); return false; }
-    if(Object.keys(data.players || {}).length >= 2) { alert('Комната заполнена'); return false; }
-    mp.roomId = roomId;
-    mp.isHost = false;
-    mp.nickname = nickname;
-    mp.roomName = data.name;
-    mp.password = password;
-    mp.connected = true;
-    mp.chatMessages = [];
-    roomRef.child('players').child(nickname).set({ joined: Date.now(), ready: true });
-    mpRoomRef = roomRef;
-    mpPlayerRef = roomRef.child('players').child(nickname);
-    // Чат
-    mpChatRef = roomRef.child('chat');
-    mpChatRef.on('child_added', snap => {
-      const msg = snap.val();
-      if(msg) mp.chatMessages.push(msg);
-      if(mp.chatMessages.length > 20) mp.chatMessages.shift();
-    });
-    // Хост нажал старт
-    roomRef.on('value', snap => {
-      const d = snap.val();
-      if(!d){ leaveMultiplayer(); return; }
-      if(d.status === 'playing' && gameState === STATE_MP_LOBBY){
-        startMultiplayerGame();
-      }
-    });
-    gameState = STATE_MP_LOBBY;
-    if(isMobile) showMobileControls(false);
-    return true;
-  }).catch(err => {
-    alert('Ошибка: ' + err.message);
-    return false;
-  });
-}
-
-function startMultiplayerGame(){
-  if(!mp.isHost) return;
-  if(!mpRoomRef) return;
-  // Генерируем карту на хосте
-  currentLevel = 1;
-  targetMoney = getTargetForLevel(1);
-  balance = 0;
-  playerHealth = MAX_HEALTH;
-  playerHunger = MAX_HUNGER;
-  generateMap(1);
-  generateResources(1);
-  generateAnimals(1);
-  generateWolves(1);
-  generateBoss(1);
-  player.x = CANVAS_WIDTH/4; player.y = CANVAS_HEIGHT/2;
-  // Отправляем параметры карты в Firebase
-  const mapData = {
-    seed: Date.now(),
-    resources: resources.map(r => ({ type: r.type, tx: r.tx, ty: r.ty }))
-  };
-  mpRoomRef.update({
-    status: 'playing',
-    mapData: mapData
-  });
-  startMpSync();
-  mp.stats.games++;
-  gameState = STATE_MP_GAME;
-  if(isMobile) showMobileControls(true);
-}
-
-function startMpSync(){
-  if(mpSyncInterval) clearInterval(mpSyncInterval);
-  mpSyncInterval = setInterval(() => {
-    if(!mpPlayerRef || !mp.connected) return;
-    mpPlayerRef.update({
-      x: player.x,
-      y: player.y,
-      level: currentLevel,
-      balance: balance
-    });
-  }, 100);
-
-  if(!mpRoomRef) return;
-  // Слушаем второго игрока
-  mpRoomRef.child('players').on('value', snap => {
-    const players = snap.val() || {};
-    const others = Object.keys(players).filter(n => n !== mp.nickname);
-    if(others.length > 0){
-      const name = others[0];
-      const p = players[name];
-      if(p && p.x !== undefined){
-        mp.remotePlayer = {
-          nickname: name,
-          x: p.x,
-          y: p.y,
-          level: p.level,
-          balance: p.balance
-        };
-      }
-    } else {
-      mp.remotePlayer = null;
-    }
-  });
-
-  // Слушаем карту (если мы клиент)
-  if(!mp.isHost){
-    mpRoomRef.child('mapData').once('value').then(snap => {
-      const data = snap.val();
-      if(data){
-        currentLevel = 1;
-        targetMoney = getTargetForLevel(1);
-        generateMap(1);
-        resources = data.resources.map(r => ({ type:r.type, tx:r.tx, ty:r.ty, state:'idle', respawnTimer:0, particleTimer:0 }));
-        generateAnimals(1);
-        generateWolves(1);
-        generateBoss(1);
-        player.x = CANVAS_WIDTH * 3/4; player.y = CANVAS_HEIGHT/2;
-        startMpSync();
-        mp.stats.games++;
-        gameState = STATE_MP_GAME;
-        if(isMobile) showMobileControls(true);
-      }
-    });
-  }
-}
-
-function sendChatMessage(text){
-  if(!mpChatRef || !text.trim()) return;
-  mpChatRef.push({
-    author: mp.nickname,
-    text: text.trim(),
-    time: Date.now()
-  });
-}
-
-function leaveMultiplayer(){
-  if(mpSyncInterval) { clearInterval(mpSyncInterval); mpSyncInterval = null; }
-  if(mpPlayerRef){
-    mpPlayerRef.remove();
-  }
-  if(mpRoomRef && mp.isHost){
-    mpRoomRef.remove();
-  }
-  if(mpChatRef){
-    mpChatRef.off();
-  }
-  if(mpRoomRef){
-    mpRoomRef.off();
-  }
-  mp.roomId = null;
-  mp.isHost = false;
-  mp.connected = false;
-  mp.remotePlayer = null;
-  mp.chatMessages = [];
-  mpRoomRef = null;
-  mpPlayerRef = null;
-  mpChatRef = null;
-  gameState = STATE_MP_MENU;
-  if(isMobile) showMobileControls(false);
-}
-
-function drawMpMenu(){
-  ctx.fillStyle='#0a0a1e'; ctx.fillRect(0,0,CANVAS_WIDTH,CANVAS_HEIGHT);
-  ctx.fillStyle='#fff'; ctx.font='bold 32px "Courier New"'; ctx.textAlign='center';
-  ctx.fillText('🌐 Мультиплеер', CANVAS_WIDTH/2, 50);
-  ctx.font='14px "Courier New"'; ctx.fillStyle='#a5d6a7';
-  ctx.fillText('Играйте с другом по сети через Firebase', CANVAS_WIDTH/2, 80);
-
-  const btnW = 350, btnH = 60, startY = 140, gap = 80;
-  drawButton(CANVAS_WIDTH/2 - btnW/2, startY, btnW, btnH, '➕ Создать комнату', '#4caf50');
-  drawButton(CANVAS_WIDTH/2 - btnW/2, startY + gap, btnW, btnH, '🔍 Войти в комнату', '#2196f3');
-
-  ctx.fillStyle='#666'; ctx.font='12px "Courier New"';
-  ctx.fillText('Требуется интернет и настроенный Firebase', CANVAS_WIDTH/2, CANVAS_HEIGHT - 100);
-
-  drawButton(CANVAS_WIDTH/2 - 100, CANVAS_HEIGHT - 60, 200, 42, '← Назад', '#888');
-  canvas.mpMenuButtons = [
-    { x:CANVAS_WIDTH/2 - btnW/2, y:startY, w:btnW, h:btnH, action:'create' },
-    { x:CANVAS_WIDTH/2 - btnW/2, y:startY+gap, w:btnW, h:btnH, action:'join' },
-    { x:CANVAS_WIDTH/2 - 100, y:CANVAS_HEIGHT - 60, w:200, h:42, action:'back' }
-  ];
-  canvas.mpInputMode = null;
-  canvas.mpInputValue = '';
-  canvas.mpRoomName = '';
-  canvas.mpPassword = '';
-}
-
-function drawMpLobby(){
-  ctx.fillStyle='#0a0a1e'; ctx.fillRect(0,0,CANVAS_WIDTH,CANVAS_HEIGHT);
-  ctx.fillStyle='#fff'; ctx.font='bold 28px "Courier New"'; ctx.textAlign='center';
-  ctx.fillText('🏠 Лобби', CANVAS_WIDTH/2, 40);
-
-  ctx.font='16px "Courier New"';
-  ctx.fillStyle='#ffd700';
-  ctx.fillText(`Комната: ${mp.roomName || ''}`, CANVAS_WIDTH/2, 80);
-  ctx.fillStyle='#4caf50';
-  ctx.font='bold 24px "Courier New"';
-  ctx.fillText(`Код: ${mp.roomId}`, CANVAS_WIDTH/2, 115);
-
-  ctx.font='13px "Courier New"'; ctx.fillStyle='#a5d6a7';
-  ctx.fillText('Передай код другу (и пароль)', CANVAS_WIDTH/2, 140);
-
-  // Игроки
-  ctx.fillStyle='#fff'; ctx.font='bold 16px "Courier New"';
-  ctx.fillText('Игроки:', CANVAS_WIDTH/2, 180);
-  ctx.font='14px "Courier New"';
-  ctx.fillText(`👤 ${mp.nickname} (хост)`, CANVAS_WIDTH/2, 205);
-
-  if(mp.remotePlayer || mp.connected){
-    if(mp.remotePlayer){
-      ctx.fillStyle='#4caf50';
-      ctx.fillText(`👤 ${mp.remotePlayer.nickname}`, CANVAS_WIDTH/2, 230);
-    } else {
-      ctx.fillStyle='#888';
-      ctx.fillText('⏳ Ожидание друга...', CANVAS_WIDTH/2, 230);
-    }
-  }
-
-  // Чат
-  ctx.fillStyle='#1e1e2e';
-  ctx.fillRect(40, 260, CANVAS_WIDTH - 80, 200);
-  ctx.fillStyle='#fff'; ctx.font='bold 14px "Courier New"'; ctx.textAlign='left';
-  ctx.fillText('💬 Чат:', 55, 285);
-  ctx.font='12px "Courier New"';
-  let cy = 305;
-  for(let m of mp.chatMessages.slice(-8)){
-    ctx.fillStyle = m.author === mp.nickname ? '#4caf50' : '#ffd700';
-    ctx.fillText(`${m.author}:`, 55, cy);
-    ctx.fillStyle='#fff';
-    ctx.fillText(m.text, 130, cy);
-    cy += 18;
-  }
-
-  // Поле ввода чата
-  ctx.fillStyle='#2d2d4d';
-  ctx.fillRect(40, 470, CANVAS_WIDTH - 80, 35);
-  ctx.strokeStyle='#555';
-  ctx.strokeRect(40, 470, CANVAS_WIDTH - 80, 35);
-  ctx.fillStyle = canvas.mpChatActive ? '#fff' : '#888';
-  ctx.font='14px "Courier New"';
-  ctx.fillText(canvas.mpChatInput || 'Нажми, чтобы писать...', 55, 493);
-
-  // Кнопки
-  const btnY = CANVAS_HEIGHT - 100;
-  if(mp.isHost){
-    drawButton(CANVAS_WIDTH/2 - 200, btnY, 200, 45, '▶ Начать игру', '#4caf50');
-    drawButton(CANVAS_WIDTH/2 + 5, btnY, 190, 45, '🚪 Выйти', '#f44336');
-    canvas.mpLobbyButtons = [
-      { x:CANVAS_WIDTH/2 - 200, y:btnY, w:200, h:45, action:'start' },
-      { x:CANVAS_WIDTH/2 + 5, y:btnY, w:190, h:45, action:'leave' }
-    ];
-  } else {
-    drawButton(CANVAS_WIDTH/2 - 100, btnY, 200, 45, '🚪 Выйти', '#f44336');
-    ctx.fillStyle='#aaa'; ctx.font='12px "Courier New"'; ctx.textAlign='center';
-    ctx.fillText('Ждём, пока хост начнёт игру...', CANVAS_WIDTH/2, btnY - 20);
-    canvas.mpLobbyButtons = [
-      { x:CANVAS_WIDTH/2 - 100, y:btnY, w:200, h:45, action:'leave' }
-    ];
-  }
-  canvas.mpChatBox = { x:40, y:470, w:CANVAS_WIDTH - 80, h:35 };
-}
-
-function drawMpGame(){
-  // Обычная игра + второй игрок
-  renderPlaying();
-  // Отрисовка второго игрока
-  if(mp.remotePlayer){
-    const rp = mp.remotePlayer;
-    ctx.save();
-    ctx.translate(rp.x, rp.y);
-    ctx.fillStyle='rgba(0,0,0,0.3)';
-    ctx.beginPath(); ctx.ellipse(0,8,11,6,0,0,Math.PI*2); ctx.fill();
-    ctx.strokeStyle='#2196f3';
-    ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(-6,12); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(6,12); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(0,-6); ctx.lineTo(0,0); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(0,-6); ctx.lineTo(-8,4); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(0,-6); ctx.lineTo(8,4); ctx.stroke();
-    ctx.fillStyle='#2196f3';
-    ctx.beginPath(); ctx.arc(0,-14,8,0,Math.PI*2); ctx.fill();
-    ctx.fillStyle='#fff';
-    ctx.beginPath(); ctx.arc(-3,-16,2,0,Math.PI*2); ctx.fill();
-    ctx.beginPath(); ctx.arc(3,-16,2,0,Math.PI*2); ctx.fill();
-    ctx.fillStyle='#000';
-    ctx.beginPath(); ctx.arc(-3,-16,1,0,Math.PI*2); ctx.fill();
-    ctx.beginPath(); ctx.arc(3,-16,1,0,Math.PI*2); ctx.fill();
-    // Ник
-    ctx.fillStyle='#fff'; ctx.font='bold 12px "Courier New"'; ctx.textAlign='center';
-    ctx.fillText(rp.nickname, 0, -30);
-    ctx.restore();
-  }
-
-  // Кнопка выйти
-  if(!isMobile){
-    drawButton(15, CANVAS_HEIGHT - 50, 120, 35, '← Выйти', '#f44336', true, 12);
-    canvas.mpLeaveButton = { x:15, y:CANVAS_HEIGHT - 50, w:120, h:35 };
-  }
-}
-
 // ===================== PVP =====================
 function getRank(rating){
   let rank = RANKS[0];
@@ -1354,7 +966,6 @@ function updatePvpArena(dt){
   pvpPlayer.y = Math.max(30, Math.min(CANVAS_HEIGHT-30, pvpPlayer.y));
   if(pvpPlayer.attackCooldown > 0) pvpPlayer.attackCooldown -= dt;
   if(pvpPlayer.invulnTimer > 0) pvpPlayer.invulnTimer -= dt;
-
   if(!pvpOpponent) return;
   pvpOpponent.attackCooldown -= dt;
   const edx = pvpPlayer.x - pvpOpponent.x;
@@ -1379,138 +990,6 @@ function updatePvpArena(dt){
   }
   updateParticles(dt);
   updateFlyingTexts(dt);
-}
-function drawPvpArena(){
-  ctx.fillStyle = '#1a1a2e'; ctx.fillRect(0,0,CANVAS_WIDTH,CANVAS_HEIGHT);
-  ctx.fillStyle = '#2d2d4d';
-  ctx.beginPath();
-  ctx.arc(CANVAS_WIDTH/2, CANVAS_HEIGHT/2, Math.min(CANVAS_WIDTH,CANVAS_HEIGHT)/2 - 40, 0, Math.PI*2);
-  ctx.fill();
-  ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 3;
-  ctx.beginPath();
-  ctx.arc(CANVAS_WIDTH/2, CANVAS_HEIGHT/2, Math.min(CANVAS_WIDTH,CANVAS_HEIGHT)/2 - 40, 0, Math.PI*2);
-  ctx.stroke();
-
-  if(pvpPlayer){
-    ctx.save(); ctx.translate(pvpPlayer.x, pvpPlayer.y);
-    const skin = SKINS.find(s=>s.id===equippedSkin) || SKINS[0];
-    if(pvpPlayer.invulnTimer > 0 && Math.floor(pvpPlayer.invulnTimer*20)%2 === 0) ctx.globalAlpha = 0.5;
-    ctx.fillStyle='rgba(0,0,0,0.3)';
-    ctx.beginPath(); ctx.ellipse(0,8,12,6,0,0,Math.PI*2); ctx.fill();
-    ctx.strokeStyle = skin.colorBody; ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(-6,12); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(6,12); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(0,-6); ctx.lineTo(0,0); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(0,-6); ctx.lineTo(-8,4); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(0,-6); ctx.lineTo(8,4); ctx.stroke();
-    ctx.fillStyle = skin.colorHead;
-    ctx.beginPath(); ctx.arc(0,-14,8,0,Math.PI*2); ctx.fill();
-    ctx.strokeStyle = '#000'; ctx.lineWidth = 1; ctx.stroke();
-    ctx.fillStyle = '#fff';
-    ctx.beginPath(); ctx.arc(-3,-16,2,0,Math.PI*2); ctx.fill();
-    ctx.beginPath(); ctx.arc(3,-16,2,0,Math.PI*2); ctx.fill();
-    ctx.fillStyle = '#000';
-    ctx.beginPath(); ctx.arc(-3,-16,1,0,Math.PI*2); ctx.fill();
-    ctx.beginPath(); ctx.arc(3,-16,1,0,Math.PI*2); ctx.fill();
-    ctx.globalAlpha = 1; ctx.restore();
-    const hpBarW = 200, hpBarH = 18;
-    ctx.fillStyle='#333'; ctx.fillRect(30, 30, hpBarW, hpBarH);
-    ctx.fillStyle='#4caf50'; ctx.fillRect(30, 30, hpBarW*(pvpPlayer.health/pvpPlayer.maxHealth), hpBarH);
-    ctx.strokeStyle='#fff'; ctx.strokeRect(30, 30, hpBarW, hpBarH);
-    ctx.fillStyle='#fff'; ctx.font='bold 12px "Courier New"'; ctx.textAlign='center';
-    ctx.fillText(`ВЫ: ${Math.ceil(pvpPlayer.health)}/${pvpPlayer.maxHealth}`, 30 + hpBarW/2, 43);
-  }
-
-  if(pvpOpponent){
-    ctx.save(); ctx.translate(pvpOpponent.x, pvpOpponent.y);
-    ctx.fillStyle='rgba(0,0,0,0.3)';
-    ctx.beginPath(); ctx.ellipse(0,8,16,8,0,0,Math.PI*2); ctx.fill();
-    ctx.fillStyle='#8b0000';
-    ctx.beginPath(); ctx.ellipse(0,0,20,14,0,0,Math.PI*2); ctx.fill();
-    ctx.fillStyle='#4a0000';
-    ctx.beginPath(); ctx.arc(-14,-4,10,0,Math.PI*2); ctx.fill();
-    ctx.fillStyle='#ffeb3b';
-    ctx.beginPath(); ctx.arc(-17,-6,2.5,0,Math.PI*2); ctx.fill();
-    ctx.beginPath(); ctx.arc(-11,-6,2.5,0,Math.PI*2); ctx.fill();
-    ctx.fillStyle='#000';
-    ctx.beginPath(); ctx.arc(-17,-6,1.2,0,Math.PI*2); ctx.fill();
-    ctx.beginPath(); ctx.arc(-11,-6,1.2,0,Math.PI*2); ctx.fill();
-    ctx.font = '24px "Courier New"'; ctx.textAlign='center';
-    ctx.fillText(pvpOpponent.icon, 0, -22);
-    ctx.restore();
-    const hpBarW = 200, hpBarH = 18;
-    ctx.fillStyle='#333'; ctx.fillRect(CANVAS_WIDTH - 30 - hpBarW, 30, hpBarW, hpBarH);
-    ctx.fillStyle='#f44336'; ctx.fillRect(CANVAS_WIDTH - 30 - hpBarW, 30, hpBarW*(pvpOpponent.health/pvpOpponent.maxHealth), hpBarH);
-    ctx.strokeStyle='#fff'; ctx.strokeRect(CANVAS_WIDTH - 30 - hpBarW, 30, hpBarW, hpBarH);
-    ctx.fillStyle='#fff'; ctx.font='bold 12px "Courier New"'; ctx.textAlign='center';
-    ctx.fillText(`${pvpOpponent.config.name}: ${Math.ceil(pvpOpponent.health)}/${pvpOpponent.maxHealth}`, CANVAS_WIDTH - 30 - hpBarW/2, 43);
-  }
-
-  drawParticles();
-  drawFlyingTexts();
-
-  ctx.fillStyle='rgba(255,255,255,0.6)'; ctx.font='12px "Courier New"'; ctx.textAlign='center';
-  if(!isMobile) ctx.fillText('WASD — движение | Q или ПРОБЕЛ — атака | Esc — выйти', CANVAS_WIDTH/2, CANVAS_HEIGHT - 30);
-  else ctx.fillText('Джойстик — движение | ⚔️ — атака', CANVAS_WIDTH/2, CANVAS_HEIGHT - 100);
-}
-function drawPvpMenu(){
-  ctx.fillStyle='#1a1a2e'; ctx.fillRect(0,0,CANVAS_WIDTH,CANVAS_HEIGHT);
-  ctx.fillStyle='#fff'; ctx.font='bold 32px "Courier New"'; ctx.textAlign='center';
-  ctx.fillText('⚔️ PvP Арена', CANVAS_WIDTH/2, 50);
-  const rank = getRank(pvp.rating);
-  ctx.font='16px "Courier New"'; ctx.fillStyle=rank.color;
-  ctx.fillText(`${rank.name} — ${pvp.rating} очков`, CANVAS_WIDTH/2, 85);
-  ctx.fillStyle='#a5d6a7'; ctx.font='13px "Courier New"';
-  ctx.fillText(`Побед: ${pvp.wins} | Поражений: ${pvp.losses} | Серия: ${pvp.winStreak} (лучшая: ${pvp.bestStreak})`, CANVAS_WIDTH/2, 108);
-  ctx.fillStyle='#fff'; ctx.font='bold 16px "Courier New"';
-  ctx.fillText('Выбери противника:', CANVAS_WIDTH/2, 145);
-  const btnW = 500, btnH = 55, startY = 170;
-  canvas.pvpButtons = [];
-  for(let i=0;i<PVP_OPPONENTS.length;i++){
-    const opp = PVP_OPPONENTS[i];
-    const x = CANVAS_WIDTH/2 - btnW/2;
-    const y = startY + i * (btnH + 8);
-    ctx.fillStyle = '#2d2d4d'; ctx.fillRect(x, y, btnW, btnH);
-    ctx.strokeStyle = '#555'; ctx.strokeRect(x, y, btnW, btnH);
-    ctx.fillStyle='#fff'; ctx.font='bold 16px "Courier New"'; ctx.textAlign='left';
-    ctx.fillText(`${opp.icon} ${opp.name}`, x + 20, y + 22);
-    ctx.font='12px "Courier New"'; ctx.fillStyle='#ccc';
-    ctx.fillText(`Сложность: ${opp.difficulty} | HP: ${opp.hp} | Урон: ${opp.damage}`, x + 20, y + 42);
-    ctx.textAlign='right'; ctx.fillStyle='#ffd700'; ctx.font='bold 14px "Courier New"';
-    ctx.fillText(`+${opp.reward}💰 +${opp.ratingWin} рейт`, x + btnW - 20, y + 32);
-    canvas.pvpButtons.push({ x, y, w:btnW, h:btnH, oppId:opp.id });
-  }
-  drawButton(CANVAS_WIDTH/2 - 100, CANVAS_HEIGHT - 55, 200, 42, '← Назад', '#888');
-  canvas.pvpBackButton = { x:CANVAS_WIDTH/2 - 100, y:CANVAS_HEIGHT - 55, w:200, h:42 };
-}
-function drawPvpResult(){
-  ctx.fillStyle='#1a1a2e'; ctx.fillRect(0,0,CANVAS_WIDTH,CANVAS_HEIGHT);
-  if(!pvpResult) return;
-  const win = pvpResult.win;
-  ctx.fillStyle = win ? '#4caf50' : '#f44336';
-  ctx.font='bold 64px "Courier New"'; ctx.textAlign='center';
-  ctx.fillText(win ? '🏆 ПОБЕДА!' : '💀 ПОРАЖЕНИЕ', CANVAS_WIDTH/2, CANVAS_HEIGHT/2 - 100);
-  ctx.fillStyle='#fff'; ctx.font='bold 24px "Courier New"';
-  ctx.fillText(`Противник: ${pvpResult.opp.name}`, CANVAS_WIDTH/2, CANVAS_HEIGHT/2 - 40);
-  ctx.font='22px "Courier New"';
-  if(win){
-    ctx.fillStyle='#ffd700';
-    ctx.fillText(`+${pvpResult.reward} монет`, CANVAS_WIDTH/2, CANVAS_HEIGHT/2 + 10);
-    ctx.fillStyle='#4caf50';
-    ctx.fillText(`+${pvpResult.ratingChange} рейтинга`, CANVAS_WIDTH/2, CANVAS_HEIGHT/2 + 45);
-  } else {
-    ctx.fillStyle='#f44336';
-    ctx.fillText(`${pvpResult.ratingChange} рейтинга`, CANVAS_WIDTH/2, CANVAS_HEIGHT/2 + 10);
-  }
-  const rank = getRank(pvp.rating);
-  ctx.fillStyle=rank.color; ctx.font='bold 18px "Courier New"';
-  ctx.fillText(`${rank.name} — ${pvp.rating}`, CANVAS_WIDTH/2, CANVAS_HEIGHT/2 + 100);
-  drawButton(CANVAS_WIDTH/2 - 120, CANVAS_HEIGHT - 150, 240, 45, '⚔️ Снова', '#4caf50', true, 16);
-  drawButton(CANVAS_WIDTH/2 - 120, CANVAS_HEIGHT - 90, 240, 45, '← К арене', '#888', true, 16);
-  canvas.pvpResultButtons = [
-    { x:CANVAS_WIDTH/2 - 120, y:CANVAS_HEIGHT - 150, w:240, h:45, action:'again' },
-    { x:CANVAS_WIDTH/2 - 120, y:CANVAS_HEIGHT - 90, w:240, h:45, action:'back' }
-  ];
 }
 
 // ===================== ОБНОВЛЕНИЯ =====================
@@ -1660,7 +1139,6 @@ function updatePlaying(dt){
   playerHunger -= HUNGER_DRAIN * dt;
   if(playerHunger < 0) playerHunger = 0;
   updatePet(dt);
-
   if(levelTransitionPhase === 'darken'){
     levelTransition += dt * 2.5;
     if(levelTransition >= 1){ levelTransition = 1; doActualLevelUp(); levelTransitionPhase = 'brighten'; }
@@ -1668,7 +1146,6 @@ function updatePlaying(dt){
     levelTransition -= dt * 2.5;
     if(levelTransition <= 0){ levelTransition = 0; levelTransitionPhase = 'none'; }
   }
-
   if(!activeMining && deathBanner <= 0 && levelTransitionPhase === 'none'){
     let dx = 0, dy = 0;
     if(keys['ArrowLeft']||keys['KeyA']) dx -= 1;
@@ -2211,34 +1688,32 @@ function drawAchievements(){
 function drawMenu(){
   ctx.fillStyle='rgba(0,0,0,0.75)'; ctx.fillRect(0,0,CANVAS_WIDTH,CANVAS_HEIGHT);
   ctx.fillStyle='#fff'; ctx.font='bold 36px "Courier New"'; ctx.textAlign='center';
-  ctx.fillText("Miner's Quest", CANVAS_WIDTH/2, 40);
+  ctx.fillText("Miner's Quest", CANVAS_WIDTH/2, 50);
   ctx.font='14px "Courier New"'; ctx.fillStyle='#a5d6a7';
-  ctx.fillText('Этап 7: Мультиплеер', CANVAS_WIDTH/2, 65);
+  ctx.fillText('Этап 6: PvP Арена и Рейтинг', CANVAS_WIDTH/2, 75);
   const rank = getRank(pvp.rating);
-  ctx.font='12px "Courier New"'; ctx.fillStyle=rank.color;
-  ctx.fillText(`${rank.name} — ${pvp.rating}`, CANVAS_WIDTH/2, 88);
-  const btnW=220, btnH=34, startY=105, gap=39;
+  ctx.font='13px "Courier New"'; ctx.fillStyle=rank.color;
+  ctx.fillText(`${rank.name} — ${pvp.rating} рейтинга`, CANVAS_WIDTH/2, 100);
+  const btnW=220, btnH=36, startY=120, gap=42;
   drawButton(CANVAS_WIDTH/2 - btnW/2, startY, btnW, btnH, '▶ Играть', '#4caf50');
-  drawButton(CANVAS_WIDTH/2 - btnW/2, startY + gap, btnW, btnH, '🌐 Мультиплеер', '#9c27b0');
-  drawButton(CANVAS_WIDTH/2 - btnW/2, startY + gap*2, btnW, btnH, '⚔️ PvP Арена', '#f44336');
-  drawButton(CANVAS_WIDTH/2 - btnW/2, startY + gap*3, btnW, btnH, '🛒 Магазин', gameWasStarted ? '#2196f3' : '#555', gameWasStarted);
-  drawButton(CANVAS_WIDTH/2 - btnW/2, startY + gap*4, btnW, btnH, '❓ Как играть', '#ff9800');
-  drawButton(CANVAS_WIDTH/2 - btnW/2, startY + gap*5, btnW, btnH, `🎵 Музыка: ${musicEnabled?'ВКЛ':'ВЫКЛ'}`, '#673ab7');
-  drawButton(CANVAS_WIDTH/2 - btnW/2, startY + gap*6, btnW, btnH, '🔄 Сбросить', '#888');
+  drawButton(CANVAS_WIDTH/2 - btnW/2, startY + gap, btnW, btnH, '⚔️ PvP Арена', '#f44336');
+  drawButton(CANVAS_WIDTH/2 - btnW/2, startY + gap*2, btnW, btnH, '🛒 Магазин', gameWasStarted ? '#2196f3' : '#555', gameWasStarted);
+  drawButton(CANVAS_WIDTH/2 - btnW/2, startY + gap*3, btnW, btnH, '❓ Как играть', '#ff9800');
+  drawButton(CANVAS_WIDTH/2 - btnW/2, startY + gap*4, btnW, btnH, `🎵 Музыка: ${musicEnabled?'ВКЛ':'ВЫКЛ'}`, '#9c27b0');
+  drawButton(CANVAS_WIDTH/2 - btnW/2, startY + gap*5, btnW, btnH, '🔄 Сбросить', '#888');
   canvas.menuButtons = [
     { x:CANVAS_WIDTH/2 - btnW/2, y:startY, w:btnW, h:btnH, action:'play' },
-    { x:CANVAS_WIDTH/2 - btnW/2, y:startY+gap, w:btnW, h:btnH, action:'multiplayer' },
-    { x:CANVAS_WIDTH/2 - btnW/2, y:startY+gap*2, w:btnW, h:btnH, action:'pvp' },
-    { x:CANVAS_WIDTH/2 - btnW/2, y:startY+gap*3, w:btnW, h:btnH, action:'shop', active:gameWasStarted },
-    { x:CANVAS_WIDTH/2 - btnW/2, y:startY+gap*4, w:btnW, h:btnH, action:'howto' },
-    { x:CANVAS_WIDTH/2 - btnW/2, y:startY+gap*5, w:btnW, h:btnH, action:'music' },
-    { x:CANVAS_WIDTH/2 - btnW/2, y:startY+gap*6, w:btnW, h:btnH, action:'reset' }
+    { x:CANVAS_WIDTH/2 - btnW/2, y:startY+gap, w:btnW, h:btnH, action:'pvp' },
+    { x:CANVAS_WIDTH/2 - btnW/2, y:startY+gap*2, w:btnW, h:btnH, action:'shop', active:gameWasStarted },
+    { x:CANVAS_WIDTH/2 - btnW/2, y:startY+gap*3, w:btnW, h:btnH, action:'howto' },
+    { x:CANVAS_WIDTH/2 - btnW/2, y:startY+gap*4, w:btnW, h:btnH, action:'music' },
+    { x:CANVAS_WIDTH/2 - btnW/2, y:startY+gap*5, w:btnW, h:btnH, action:'reset' }
   ];
 }
 function drawHowToPlay(){
   ctx.fillStyle='rgba(0,0,0,0.92)'; ctx.fillRect(0,0,CANVAS_WIDTH,CANVAS_HEIGHT);
   ctx.fillStyle='#fff'; ctx.font='bold 22px "Courier New"'; ctx.textAlign='center';
-  ctx.fillText('Как играть', CANVAS_WIDTH/2, 20);
+  ctx.fillText('Как играть', CANVAS_WIDTH/2, 25);
   ctx.font='11px "Courier New"'; ctx.textAlign='left';
   const lines = isMobile ? [
     '📱 Управление:',
@@ -2251,21 +1726,16 @@ function drawHowToPlay(){
     '👹 Босс на каждом 5-м уровне',
     '🐾 Питомцы, 🏆 Достижения, 🍽️ Голод',
     '',
-    '⚔️ PvP Арена — бои с ботами',
+    '⚔️ ЭТАП 6 — PvP Арена:',
+    '   Выбирай противника по сложности',
+    '   Сражайся 1 на 1, получай рейтинг',
     '   Ранги: Новичок → Бронза → Серебро →',
-    '          Золото → Платина → Легенда',
-    '',
-    '🌐 ЭТАП 7 — Мультиплеер:',
-    '   • Создай комнату — получи код',
-    '   • Друг вводит код и пароль',
-    '   • Играете вместе на одной карте',
-    '   ⚠️ Нужен интернет и Firebase'
+    '          Золото → Платина → Легенда'
   ] : [
     '🎮 Управление:',
     '   WASD/стрелки — движение | E — добыть',
     '   Q — атака | F — мясо | I — инвентарь',
-    '   K — достижения | M — магазин | P — арена',
-    '   Esc — пауза',
+    '   K — достижения | M — магазин | Esc — пауза',
     '',
     '⚔️ 6 видов оружия: Кулаки → Дубина → Меч → Копьё → Топор → Лук',
     '📦 Ресурсы: камень, дерево, золото, алмаз',
@@ -2275,14 +1745,12 @@ function drawHowToPlay(){
     '🏆 Достижения — каждое даёт монеты',
     '🍽️ Голод — ешь мясо, иначе медленнее',
     '',
-    '⚔️ PvP Арена (P): бои с ботами, рейтинг и ранги',
-    '',
-    '🌐 ЭТАП 7 — Мультиплеер:',
-    '   • В главном меню — «🌐 Мультиплеер»',
-    '   • Создай комнату — получи код',
-    '   • Друг вводит код и пароль',
-    '   • Играете вместе на одной карте',
-    '   ⚠️ Нужен интернет и настроенный Firebase'
+    '⚔️ ЭТАП 6 — PvP Арена (P):',
+    '   Выбирай противника по сложности',
+    '   Сражайся 1 на 1, получай рейтинг и монеты',
+    '   Побеждай 3 подряд — бонус!',
+    '   Ранги: Новичок → Бронза → Серебро →',
+    '          Золото → Платина → Легенда'
   ];
   for(let i=0;i<lines.length;i++){
     ctx.fillText(lines[i], 40, 48 + i*18);
@@ -2534,18 +2002,6 @@ function handleKeyDown(e){
     if(e.code === 'Escape'){ e.preventDefault(); gameState = STATE_MENU; }
     return;
   }
-  if(gameState === STATE_MP_MENU || gameState === STATE_MP_LOBBY){
-    if(e.code === 'Escape'){ e.preventDefault(); if(gameState === STATE_MP_LOBBY) leaveMultiplayer(); else gameState = STATE_MENU; }
-    return;
-  }
-  if(gameState === STATE_MP_GAME){
-    if(e.code === 'Escape'){ e.preventDefault(); leaveMultiplayer(); }
-    keys[e.code]=true;
-    if((e.code==='KeyE'||e.code==='Space')) triggerAction();
-    if(e.code==='KeyQ') playerAttack();
-    if(e.code==='KeyF') eatMeat();
-    return;
-  }
   if(gameState===STATE_HOWTO){
     if(e.code==='Escape'){ e.preventDefault(); gameState = STATE_MENU; }
     return;
@@ -2569,7 +2025,6 @@ function handleKeyUp(e){ keys[e.code]=false; }
 
 function handleClick(e){
   const {x,y} = getCanvasCoords(e);
-
   if(gameState===STATE_HOWTO){
     if(canvas.howtoButtons){
       for(let b of canvas.howtoButtons){
@@ -2617,58 +2072,14 @@ function handleClick(e){
     }
     return;
   }
-  // МУЛЬТИПЛЕЕР МЕНЮ
-  if(gameState===STATE_MP_MENU){
-    if(canvas.mpMenuButtons){
-      for(let b of canvas.mpMenuButtons){
-        if(x>=b.x && x<=b.x+b.w && y>=b.y && y<=b.y+b.h){
-          if(b.action==='back'){ gameState = STATE_MENU; return; }
-          if(b.action==='create'){ canvas.mpInputMode = 'create_nickname'; canvas.mpInputValue = ''; return; }
-          if(b.action==='join'){ canvas.mpInputMode = 'join_roomid'; canvas.mpInputValue = ''; return; }
-        }
-      }
-    }
-    return;
-  }
-  // ЛОББИ
-  if(gameState===STATE_MP_LOBBY){
-    if(canvas.mpChatBox){
-      const b = canvas.mpChatBox;
-      if(x>=b.x && x<=b.x+b.w && y>=b.y && y<=b.y+b.h){
-        canvas.mpChatActive = true;
-        return;
-      }
-    }
-    if(canvas.mpLobbyButtons){
-      for(let b of canvas.mpLobbyButtons){
-        if(x>=b.x && x<=b.x+b.w && y>=b.y && y<=b.y+b.h){
-          if(b.action==='start'){
-            if(mp.isHost) startMultiplayerGame();
-          } else if(b.action==='leave') leaveMultiplayer();
-          return;
-        }
-      }
-    }
-    return;
-  }
-  if(gameState===STATE_MP_GAME){
-    if(canvas.mpLeaveButton){
-      const b = canvas.mpLeaveButton;
-      if(x>=b.x && x<=b.x+b.w && y>=b.y && y<=b.y+b.h){ leaveMultiplayer(); return; }
-    }
-    return;
-  }
-
   if(gameState===STATE_PLAYING && canvas.menuButtonRect){
     const b = canvas.menuButtonRect;
     if(x>=b.x && x<=b.x+b.w && y>=b.y && y<=b.y+b.h){ pauseGame(); return; }
   }
-
   if(gameState===STATE_MENU && canvas.menuButtons){
     for(let b of canvas.menuButtons){
       if(x>=b.x && x<=b.x+b.w && y>=b.y && y<=b.y+b.h){
         if(b.action==='play') startGame();
-        else if(b.action==='multiplayer') openMpMenu();
         else if(b.action==='pvp') openPvpMenu();
         else if(b.action==='shop' && b.active) openShop();
         else if(b.action==='howto') gameState = STATE_HOWTO;
@@ -2703,7 +2114,6 @@ function handleClick(e){
       }
     }
   }
-
   if(!audioCtx){
     try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){}
   }
@@ -2896,7 +2306,7 @@ function saveGame(){
       ownedSkins, equippedSkin, ownedAccessories, equippedAccessory,
       ownedWeapons, equippedWeapon, ownedPets, activePet,
       miningBoostActive, goldPickaxeActive,
-      unlockedAchievements, stats, musicEnabled, pvp, mpStats: mp.stats
+      unlockedAchievements, stats, musicEnabled, pvp
     }));
   } catch(e){}
 }
@@ -2926,7 +2336,6 @@ function loadGame(){
       stats = d.stats || {mined:0,chickens:0,wolves:0,bosses:0,deaths:0,meatEaten:0};
       musicEnabled = d.musicEnabled !== undefined ? d.musicEnabled : true;
       pvp = d.pvp || {wins:0,losses:0,rating:0,winStreak:0,bestStreak:0,lastOpponent:null,battles:[]};
-      if(d.mpStats) mp.stats = d.mpStats;
     } catch(e){}
   }
 }
@@ -3017,7 +2426,7 @@ let lastTime = performance.now();
 function gameLoop(ts){
   const dt = Math.min(0.1, (ts - lastTime) / 1000);
   lastTime = ts;
-  if(gameState===STATE_PLAYING || gameState===STATE_MP_GAME) updatePlaying(dt);
+  if(gameState===STATE_PLAYING) updatePlaying(dt);
   else if(gameState===STATE_PVP_ARENA) updatePvpArena(dt);
   ctx.fillStyle='#2d2d2d';
   ctx.fillRect(0,0,CANVAS_WIDTH,CANVAS_HEIGHT);
@@ -3031,9 +2440,6 @@ function gameLoop(ts){
   else if(gameState===STATE_PVP_MENU) drawPvpMenu();
   else if(gameState===STATE_PVP_ARENA) drawPvpArena();
   else if(gameState===STATE_PVP_RESULT) drawPvpResult();
-  else if(gameState===STATE_MP_MENU) drawMpMenu();
-  else if(gameState===STATE_MP_LOBBY) drawMpLobby();
-  else if(gameState===STATE_MP_GAME) drawMpGame();
   requestAnimationFrame(gameLoop);
 }
 
